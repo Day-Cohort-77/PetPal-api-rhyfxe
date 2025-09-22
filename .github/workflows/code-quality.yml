@@ -1,0 +1,72 @@
+name: Code Quality and Coverage
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+  push:
+    branches: [ main, develop ]
+
+permissions:
+  contents: read
+  actions: read
+  checks: write
+  pull-requests: write
+
+jobs:
+  code-quality:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+        
+    - name: Restore dependencies
+      run: dotnet restore
+      
+    - name: Build
+      run: dotnet build --no-restore --configuration Release
+      
+    - name: Run tests with coverage
+      run: |
+        dotnet test --no-build --configuration Release \
+          --logger "trx;LogFileName=test-results-coverage.trx" --results-directory "TestResults" \
+          --collect:"XPlat Code Coverage" \
+          --settings coverlet.runsettings \
+          -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
+      
+    - name: Generate coverage reports
+      uses: danielpalme/ReportGenerator-GitHub-Action@5.2.0
+      with:
+        reports: 'TestResults/*/coverage.opencover.xml'
+        targetdir: 'CoverageReports'
+        reporttypes: 'Html;JsonSummary'
+        
+    - name: Upload coverage reports to Codecov
+      uses: codecov/codecov-action@v4
+      with:
+        directory: TestResults
+        files: '*/coverage.opencover.xml'
+        fail_ci_if_error: false
+        verbose: true
+        
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results-with-coverage
+        path: |
+          TestResults/
+          CoverageReports/
+        
+    - name: Comment coverage on PR
+      if: github.event_name == 'pull_request'
+      uses: madrapps/jacoco-report@v1.6.1
+      with:
+        paths: TestResults/*/coverage.opencover.xml
+        token: ${{ secrets.GITHUB_TOKEN }}
+        min-coverage-overall: 70
+        min-coverage-changed-files: 80
