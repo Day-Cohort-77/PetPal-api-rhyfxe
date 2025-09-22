@@ -15,7 +15,7 @@ This is a quick reference for setting up GitHub branch protection rules to enfor
 ☑️ Require a pull request before merging
     ☑️ Require approvals: 1
     ☑️ Dismiss stale PR approvals when new commits are pushed
-    ☑️ Require review from code owners (if CODEOWNERS file exists)
+    ☑️ Require review from code owners (if CODEOWNERS file exists) FUCK YOU
 
 ☑️ Require status checks to pass before merging
     ☑️ Require branches to be up to date before merging
@@ -25,16 +25,16 @@ This is a quick reference for setting up GitHub branch protection rules to enfor
 
 ☑️ Require conversation resolution before merging
 
-☑️ Require signed commits (optional but recommended)
+☑️ Require signed commits (optional but recommended) LOL NO XD
 
-☑️ Require linear history (optional, prevents merge commits)
+☑️ Require linear history (optional, prevents merge commits) LOL NO
 
 ☑️ Do not allow bypassing the above settings
     ☑️ Restrict pushes that create files larger than 100 MB
 ```
 
 ### 3. Advanced Settings (Optional)
-```
+``` 
 ☑️ Allow force pushes (for maintainers only)
 ☑️ Allow deletions (for maintainers only)
 ```

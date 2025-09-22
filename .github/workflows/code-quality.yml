@@ -9,21 +9,6 @@ on:
 jobs:
   code-quality:
     runs-on: ubuntu-latest
-    
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_PASSWORD: devpassword
-          POSTGRES_USER: postgres
-          POSTGRES_DB: PetPal
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
 
     steps:
     - uses: actions/checkout@v4
@@ -39,18 +24,10 @@ jobs:
     - name: Build
       run: dotnet build --no-restore --configuration Release
       
-    - name: Setup test database
-      run: |
-        dotnet user-secrets init --project PetPal.API/PetPal.API.csproj
-        dotnet user-secrets set 'ConnectionStrings:PetPalDbConnectionString' 'Host=localhost;Port=5432;Username=postgres;Password=devpassword;Database=PetPal' --project PetPal.API/PetPal.API.csproj
-      
-    - name: Run database migrations
-      run: dotnet ef database update --project PetPal.API/PetPal.API.csproj
-      
     - name: Run tests with coverage
       run: |
         dotnet test --no-build --configuration Release \
-          --logger trx --results-directory "TestResults" \
+          --logger "trx;LogFileName=test-results-coverage.trx" --results-directory "TestResults" \
           --collect:"XPlat Code Coverage" \
           --settings coverlet.runsettings \
           -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
