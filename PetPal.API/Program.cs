@@ -9,7 +9,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Configure database
 builder.Services.AddDbContext<PetPalDbContext>(options =>
-    options.UseNpgsql(builder.Configuration["PetPalDbConnectionString"]));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("PetPalDbConnectionString")));
 
 // Configure Identity
 builder.Services.AddIdentityCore<IdentityUser>(options =>
