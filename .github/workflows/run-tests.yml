@@ -1,0 +1,67 @@
+name: Run Tests
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+  push:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: devpassword
+          POSTGRES_USER: postgres
+          POSTGRES_DB: PetPal
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+        
+    - name: Restore dependencies
+      run: dotnet restore
+      
+    - name: Build
+      run: dotnet build --no-restore --configuration Release
+      
+    - name: Setup test database
+      run: |
+        dotnet user-secrets init --project PetPal.API/PetPal.API.csproj
+        dotnet user-secrets set 'ConnectionStrings:PetPalDbConnectionString' 'Host=localhost;Port=5432;Username=postgres;Password=devpassword;Database=PetPal' --project PetPal.API/PetPal.API.csproj
+      
+    - name: Run database migrations
+      run: dotnet ef database update --project PetPal.API/PetPal.API.csproj
+      
+    - name: Run tests
+      run: dotnet test --no-build --configuration Release --verbosity normal --logger trx --results-directory "TestResults"
+      
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results
+        path: TestResults/*.trx
+        
+    - name: Publish test results
+      uses: dorny/test-reporter@v1
+      if: always()
+      with:
+        name: XUnit Tests
+        path: TestResults/*.trx
+        reporter: dotnet-trx
+        fail-on-error: true
