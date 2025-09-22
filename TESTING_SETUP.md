@@ -165,7 +165,27 @@ dotnet ef database update --project PetPal.API/PetPal.API.csproj
 - Ensure proper test isolation
 - Check GitHub Actions logs for specific error messages
 
-#### 2. Branch Protection Not Working
+#### 2. "Resource not accessible by integration" Error
+**Error**: `dorny/test-reporter` fails with permissions error
+
+**Solution**:
+- Ensure workflow has proper permissions:
+  ```yaml
+  permissions:
+    contents: read
+    actions: read
+    checks: write
+    pull-requests: write
+  ```
+- Add GitHub token to test-reporter step:
+  ```yaml
+  - name: Publish test results
+    uses: dorny/test-reporter@v1.9.1
+    with:
+      token: ${{ secrets.GITHUB_TOKEN }}
+  ```
+
+#### 3. Branch Protection Not Working
 **Check**:
 - Status checks are properly configured
 - Workflow names match exactly

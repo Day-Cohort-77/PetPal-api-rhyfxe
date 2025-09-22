@@ -6,6 +6,12 @@ on:
   push:
     branches: [ main, develop ]
 
+permissions:
+  contents: read
+  actions: read
+  checks: write
+  pull-requests: write
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -35,10 +41,11 @@ jobs:
         path: TestResults/test-results.trx
         
     - name: Publish test results
-      uses: dorny/test-reporter@v1
+      uses: dorny/test-reporter@v1.9.1
       if: always()
       with:
         name: XUnit Tests
         path: TestResults/test-results.trx
         reporter: dotnet-trx
         fail-on-error: true
+        token: ${{ secrets.GITHUB_TOKEN }}
