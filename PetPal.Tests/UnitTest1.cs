@@ -2,96 +2,1244 @@ using Microsoft.EntityFrameworkCore;
 using PetPal.API.Data;
 using PetPal.API.Models;
 using FluentAssertions;
+using Microsoft.AspNetCore.Identity;
+using System.ComponentModel.DataAnnotations;
 
 namespace PetPal.Tests;
 
-public class PetPalDbContextTests
+public class ComprehensiveModelTests : IDisposable
 {
-    private PetPalDbContext GetInMemoryDbContext()
+    private readonly PetPalDbContext _context;
+
+    public ComprehensiveModelTests()
     {
         var options = new DbContextOptionsBuilder<PetPalDbContext>()
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
             .Options;
 
-        return new PetPalDbContext(options);
+        _context = new PetPalDbContext(options);
+        _context.Database.EnsureCreated();
     }
 
+    #region Pet Model - Complete Coverage
     [Fact]
-    public void CanCreatePetInDatabase()
+    public async Task Pet_CreateWithAllProperties_ShouldSaveSuccessfully()
     {
         // Arrange
-        using var context = GetInMemoryDbContext();
         var pet = new Pet
         {
             Name = "Buddy",
             Species = "Dog",
             Breed = "Golden Retriever",
-            DateOfBirth = DateTime.UtcNow.AddYears(-3),
-            Weight = 65.5m,
+            DateOfBirth = new DateTime(2021, 6, 15),
+            Weight = 25.5m,
             Color = "Golden",
+            ImageUrl = "https://example.com/images/buddy.jpg",
             MicrochipNumber = "123456789012345"
         };
 
         // Act
-        context.Pets.Add(pet);
-        context.SaveChanges();
+        _context.Pets.Add(pet);
+        await _context.SaveChangesAsync();
 
         // Assert
-        var savedPet = context.Pets.First();
+        var savedPet = await _context.Pets.FirstAsync();
         savedPet.Name.Should().Be("Buddy");
         savedPet.Species.Should().Be("Dog");
         savedPet.Breed.Should().Be("Golden Retriever");
+        savedPet.DateOfBirth.Should().Be(new DateTime(2021, 6, 15));
+        savedPet.Weight.Should().Be(25.5m);
+        savedPet.Color.Should().Be("Golden");
+        savedPet.ImageUrl.Should().Be("https://example.com/images/buddy.jpg");
+        savedPet.MicrochipNumber.Should().Be("123456789012345");
+        savedPet.Id.Should().BeGreaterThan(0);
+        savedPet.CreatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(1));
+        savedPet.UpdatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(1));
     }
 
     [Fact]
-    public void CanCreateHealthRecordInDatabase()
+    public async Task Pet_WithNullableImageUrl_ShouldSaveSuccessfully()
     {
         // Arrange
-        using var context = GetInMemoryDbContext();
+        var pet = new Pet
+        {
+            Name = "Tweety",
+            Species = "Bird",
+            Breed = "Canary",
+            DateOfBirth = DateTime.Now.AddYears(-2),
+            Weight = 0.1m,
+            Color = "Yellow",
+            ImageUrl = null, // Nullable field
+            MicrochipNumber = "BIRD123456789"
+        };
+
+        // Act
+        _context.Pets.Add(pet);
+        await _context.SaveChangesAsync();
+
+        // Assert
+        var savedPet = await _context.Pets.FirstAsync();
+        savedPet.Name.Should().Be("Tweety");
+        savedPet.ImageUrl.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Pet_WithNavigationProperties_ShouldInitializeCollections()
+    {
+        // Arrange
         var pet = new Pet
         {
             Name = "Max",
             Species = "Dog",
             Breed = "Labrador",
-            DateOfBirth = DateTime.UtcNow.AddYears(-2),
-            Weight = 70.0m,
+            DateOfBirth = DateTime.Now.AddYears(-3),
+            Weight = 30.0m,
             Color = "Black",
-            MicrochipNumber = "987654321098765"
+            MicrochipNumber = "DOG123456789"
         };
 
-        context.Pets.Add(pet);
-        context.SaveChanges();
+        // Act
+        _context.Pets.Add(pet);
+        await _context.SaveChangesAsync();
+
+        // Assert
+        var savedPet = await _context.Pets
+            .Include(p => p.Owners)
+            .Include(p => p.HealthRecords)
+            .Include(p => p.Appointments)
+            .Include(p => p.Medications)
+            .FirstAsync();
+
+        savedPet.Owners.Should().NotBeNull();
+        savedPet.HealthRecords.Should().NotBeNull();
+        savedPet.Appointments.Should().NotBeNull();
+        savedPet.Medications.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task Pet_UpdateTimestamp_ShouldUpdateCorrectly()
+    {
+        // Arrange
+        var pet = new Pet
+        {
+            Name = "Original Name",
+            Species = "Dog",
+            Breed = "Test",
+            DateOfBirth = DateTime.Now.AddYears(-1),
+            Weight = 10.0m,
+            Color = "Brown",
+            MicrochipNumber = "TEST123456789"
+        };
+
+        _context.Pets.Add(pet);
+        await _context.SaveChangesAsync();
+        var originalUpdateTime = pet.UpdatedAt;
+
+        // Wait a small amount to ensure timestamp difference
+        await Task.Delay(10);
+
+        // Act
+        pet.Name = "Updated Name";
+        pet.UpdatedAt = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+
+        // Assert
+        var updatedPet = await _context.Pets.FirstAsync();
+        updatedPet.Name.Should().Be("Updated Name");
+        updatedPet.UpdatedAt.Should().BeAfter(originalUpdateTime);
+    }
+    #endregion
+
+    #region HealthRecord Model - Complete Coverage
+    [Fact]
+    public async Task HealthRecord_CreateWithAllProperties_ShouldSaveSuccessfully()
+    {
+        // Arrange
+        var veterinarian = new Veterinarian
+        {
+            FirstName = "Dr. Sarah",
+            LastName = "Johnson",
+            Email = "dr.johnson@vetclinic.com",
+            Phone = "555-0123",
+            Specialty = "General Practice",
+            ClinicName = "Pet Care Clinic",
+            Address = "123 Main St",
+            LicenseNumber = "VET123456"
+        };
+
+        var pet = new Pet
+        {
+            Name = "Luna",
+            Species = "Cat",
+            Breed = "Persian",
+            DateOfBirth = DateTime.Now.AddYears(-2),
+            Weight = 4.5m,
+            Color = "White",
+            MicrochipNumber = "CAT123456789"
+        };
+
+        _context.Veterinarians.Add(veterinarian);
+        _context.Pets.Add(pet);
+        await _context.SaveChangesAsync();
 
         var healthRecord = new HealthRecord
         {
             PetId = pet.Id,
             RecordType = "Vaccination",
-            Description = "Annual rabies vaccination",
-            RecordDate = DateTime.UtcNow,
-            Notes = "Administered by Dr. Smith",
-            Attachments = "vaccination-record.pdf"
+            Description = "Annual rabies vaccination and wellness check",
+            RecordDate = new DateTime(2024, 9, 15),
+            VeterinarianId = veterinarian.Id,
+            Notes = "Pet was well-behaved during examination",
+            Attachments = "vaccination_certificate.pdf"
         };
 
         // Act
-        context.HealthRecords.Add(healthRecord);
-        context.SaveChanges();
+        _context.HealthRecords.Add(healthRecord);
+        await _context.SaveChangesAsync();
 
         // Assert
-        var savedRecord = context.HealthRecords.Include(hr => hr.Pet).First();
+        var savedRecord = await _context.HealthRecords.FirstAsync();
+        savedRecord.PetId.Should().Be(pet.Id);
         savedRecord.RecordType.Should().Be("Vaccination");
-        savedRecord.Pet.Name.Should().Be("Max");
+        savedRecord.Description.Should().Be("Annual rabies vaccination and wellness check");
+        savedRecord.RecordDate.Should().Be(new DateTime(2024, 9, 15));
+        savedRecord.VeterinarianId.Should().Be(veterinarian.Id);
+        savedRecord.Notes.Should().Be("Pet was well-behaved during examination");
+        savedRecord.Attachments.Should().Be("vaccination_certificate.pdf");
+        savedRecord.Id.Should().BeGreaterThan(0);
+        savedRecord.CreatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(1));
     }
 
     [Fact]
-    public void DatabaseContext_ShouldBeConfiguredCorrectly()
+    public async Task HealthRecord_WithNullableVeterinarian_ShouldSaveSuccessfully()
     {
-        // Arrange & Act
-        using var context = GetInMemoryDbContext();
+        // Arrange
+        var pet = new Pet
+        {
+            Name = "Rocky",
+            Species = "Dog",
+            Breed = "Bulldog",
+            DateOfBirth = DateTime.Now.AddYears(-4),
+            Weight = 25.0m,
+            Color = "Brindle",
+            MicrochipNumber = "DOG987654321"
+        };
+
+        _context.Pets.Add(pet);
+        await _context.SaveChangesAsync();
+
+        var healthRecord = new HealthRecord
+        {
+            PetId = pet.Id,
+            RecordType = "Emergency",
+            Description = "Emergency visit - owner administered first aid",
+            RecordDate = DateTime.Now,
+            VeterinarianId = null, // No veterinarian involved
+            Notes = "Home treatment",
+            Attachments = ""
+        };
+
+        // Act
+        _context.HealthRecords.Add(healthRecord);
+        await _context.SaveChangesAsync();
 
         // Assert
-        context.Should().NotBeNull();
-        context.Pets.Should().NotBeNull();
-        context.HealthRecords.Should().NotBeNull();
-        context.Appointments.Should().NotBeNull();
+        var savedRecord = await _context.HealthRecords.FirstAsync();
+        savedRecord.VeterinarianId.Should().BeNull();
+        savedRecord.RecordType.Should().Be("Emergency");
+    }
+
+    [Fact]
+    public async Task HealthRecord_WithPetNavigation_ShouldLoadCorrectly()
+    {
+        // Arrange
+        var pet = new Pet
+        {
+            Name = "Whiskers",
+            Species = "Cat",
+            Breed = "Maine Coon",
+            DateOfBirth = DateTime.Now.AddYears(-1),
+            Weight = 6.0m,
+            Color = "Tabby",
+            MicrochipNumber = "CAT555666777"
+        };
+
+        var healthRecord = new HealthRecord
+        {
+            Pet = pet, // Using navigation property
+            RecordType = "Checkup",
+            Description = "6-month checkup",
+            RecordDate = DateTime.Now,
+            Notes = "Healthy kitten",
+            Attachments = ""
+        };
+
+        // Act
+        _context.HealthRecords.Add(healthRecord);
+        await _context.SaveChangesAsync();
+
+        // Assert
+        var recordWithPet = await _context.HealthRecords
+            .Include(hr => hr.Pet)
+            .FirstAsync();
+
+        recordWithPet.Pet.Should().NotBeNull();
+        recordWithPet.Pet.Name.Should().Be("Whiskers");
+        recordWithPet.Pet.Breed.Should().Be("Maine Coon");
+        recordWithPet.PetId.Should().Be(pet.Id);
+    }
+    #endregion
+
+    #region Appointment Model - Complete Coverage
+    [Fact]
+    public async Task Appointment_CreateWithAllProperties_ShouldSaveSuccessfully()
+    {
+        // Arrange
+        var veterinarian = new Veterinarian
+        {
+            FirstName = "Dr. Michael",
+            LastName = "Brown",
+            Email = "dr.brown@animalhosp.com",
+            Phone = "555-0456",
+            Specialty = "Surgery",
+            ClinicName = "Animal Hospital",
+            Address = "456 Oak Ave",
+            LicenseNumber = "VET789012"
+        };
+
+        var pet = new Pet
+        {
+            Name = "Bella",
+            Species = "Dog",
+            Breed = "Beagle",
+            DateOfBirth = DateTime.Now.AddYears(-3),
+            Weight = 15.0m,
+            Color = "Tricolor",
+            MicrochipNumber = "DOG111222333"
+        };
+
+        _context.Veterinarians.Add(veterinarian);
+        _context.Pets.Add(pet);
+        await _context.SaveChangesAsync();
+
+        var appointment = new Appointment
+        {
+            PetId = pet.Id,
+            VeterinarianId = veterinarian.Id,
+            AppointmentDate = new DateTime(2024, 10, 15),
+            AppointmentTime = new TimeSpan(14, 30, 0), // 2:30 PM
+            AppointmentType = "Vaccination",
+            Notes = "Annual vaccination appointment",
+            Status = "Scheduled"
+        };
+
+        // Act
+        _context.Appointments.Add(appointment);
+        await _context.SaveChangesAsync();
+
+        // Assert
+        var savedAppointment = await _context.Appointments.FirstAsync();
+        savedAppointment.PetId.Should().Be(pet.Id);
+        savedAppointment.VeterinarianId.Should().Be(veterinarian.Id);
+        savedAppointment.AppointmentDate.Should().Be(new DateTime(2024, 10, 15));
+        savedAppointment.AppointmentTime.Should().Be(new TimeSpan(14, 30, 0));
+        savedAppointment.AppointmentType.Should().Be("Vaccination");
+        savedAppointment.Notes.Should().Be("Annual vaccination appointment");
+        savedAppointment.Status.Should().Be("Scheduled");
+        savedAppointment.Id.Should().BeGreaterThan(0);
+        savedAppointment.CreatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(1));
+    }
+
+    [Theory]
+    [InlineData("Scheduled")]
+    [InlineData("Confirmed")]
+    [InlineData("Completed")]
+    [InlineData("Cancelled")]
+    [InlineData("No-Show")]
+    public async Task Appointment_WithDifferentStatuses_ShouldSaveSuccessfully(string status)
+    {
+        // Arrange
+        var veterinarian = new Veterinarian
+        {
+            FirstName = "Dr. Test",
+            LastName = "Vet",
+            Email = "test@vet.com",
+            Phone = "555-TEST",
+            Specialty = "General",
+            ClinicName = "Test Clinic",
+            Address = "Test Address",
+            LicenseNumber = "TESTVET123"
+        };
+
+        var pet = new Pet
+        {
+            Name = "Test Pet",
+            Species = "Dog",
+            Breed = "Test Breed",
+            DateOfBirth = DateTime.Now.AddYears(-1),
+            Weight = 10.0m,
+            Color = "Test Color",
+            MicrochipNumber = "TEST123456789"
+        };
+
+        _context.Veterinarians.Add(veterinarian);
+        _context.Pets.Add(pet);
+        await _context.SaveChangesAsync();
+
+        var appointment = new Appointment
+        {
+            PetId = pet.Id,
+            VeterinarianId = veterinarian.Id,
+            AppointmentDate = DateTime.Now.AddDays(1),
+            AppointmentTime = new TimeSpan(10, 0, 0),
+            AppointmentType = "Test",
+            Notes = "Test appointment",
+            Status = status
+        };
+
+        // Act
+        _context.Appointments.Add(appointment);
+        await _context.SaveChangesAsync();
+
+        // Assert
+        var savedAppointment = await _context.Appointments.FirstAsync();
+        savedAppointment.Status.Should().Be(status);
+    }
+
+    [Fact]
+    public async Task Appointment_WithNavigationProperties_ShouldLoadCorrectly()
+    {
+        // Arrange
+        var veterinarian = new Veterinarian
+        {
+            FirstName = "Dr. Navigation",
+            LastName = "Test",
+            Email = "nav@test.com",
+            Phone = "555-NAV",
+            Specialty = "Testing",
+            ClinicName = "Navigation Clinic",
+            Address = "Navigation St",
+            LicenseNumber = "NAV123456"
+        };
+
+        var pet = new Pet
+        {
+            Name = "NavPet",
+            Species = "Cat",
+            Breed = "Navigation Breed",
+            DateOfBirth = DateTime.Now.AddYears(-2),
+            Weight = 5.0m,
+            Color = "Navigation Color",
+            MicrochipNumber = "NAV987654321"
+        };
+
+        var appointment = new Appointment
+        {
+            Pet = pet, // Using navigation properties
+            Veterinarian = veterinarian,
+            AppointmentDate = DateTime.Now.AddDays(3),
+            AppointmentTime = new TimeSpan(11, 0, 0),
+            AppointmentType = "Navigation Test",
+            Notes = "Testing navigation properties",
+            Status = "Scheduled"
+        };
+
+        // Act
+        _context.Appointments.Add(appointment);
+        await _context.SaveChangesAsync();
+
+        // Assert
+        var appointmentWithNav = await _context.Appointments
+            .Include(a => a.Pet)
+            .Include(a => a.Veterinarian)
+            .FirstAsync();
+
+        appointmentWithNav.Pet.Should().NotBeNull();
+        appointmentWithNav.Pet.Name.Should().Be("NavPet");
+        appointmentWithNav.Veterinarian.Should().NotBeNull();
+        appointmentWithNav.Veterinarian.FirstName.Should().Be("Dr. Navigation");
+        appointmentWithNav.PetId.Should().Be(pet.Id);
+        appointmentWithNav.VeterinarianId.Should().Be(veterinarian.Id);
+    }
+    #endregion
+
+    #region Veterinarian Model - Complete Coverage
+    [Fact]
+    public async Task Veterinarian_CreateWithAllProperties_ShouldSaveSuccessfully()
+    {
+        // Arrange
+        var veterinarian = new Veterinarian
+        {
+            FirstName = "Dr. Emily",
+            LastName = "Rodriguez",
+            Email = "emily.rodriguez@petclinic.com",
+            Phone = "+1-555-0199",
+            Specialty = "Cardiology",
+            ClinicName = "Specialty Pet Clinic",
+            Address = "789 Pet Lane, Animal City, AC 12345",
+            LicenseNumber = "VETLIC2024001"
+        };
+
+        // Act
+        _context.Veterinarians.Add(veterinarian);
+        await _context.SaveChangesAsync();
+
+        // Assert
+        var savedVet = await _context.Veterinarians.FirstAsync();
+        savedVet.FirstName.Should().Be("Dr. Emily");
+        savedVet.LastName.Should().Be("Rodriguez");
+        savedVet.Email.Should().Be("emily.rodriguez@petclinic.com");
+        savedVet.Phone.Should().Be("+1-555-0199");
+        savedVet.Specialty.Should().Be("Cardiology");
+        savedVet.ClinicName.Should().Be("Specialty Pet Clinic");
+        savedVet.Address.Should().Be("789 Pet Lane, Animal City, AC 12345");
+        savedVet.LicenseNumber.Should().Be("VETLIC2024001");
+        savedVet.Id.Should().BeGreaterThan(0);
+        savedVet.CreatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(1));
+        savedVet.UpdatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(1));
+    }
+
+    [Theory]
+    [InlineData("General Practice")]
+    [InlineData("Surgery")]
+    [InlineData("Dermatology")]
+    [InlineData("Cardiology")]
+    [InlineData("Oncology")]
+    [InlineData("Emergency Medicine")]
+    public async Task Veterinarian_WithDifferentSpecialties_ShouldSaveSuccessfully(string specialty)
+    {
+        // Arrange
+        var veterinarian = new Veterinarian
+        {
+            FirstName = "Dr. Specialty",
+            LastName = "Test",
+            Email = $"specialty.{specialty.Replace(" ", "").ToLower()}@test.com",
+            Phone = "555-SPEC",
+            Specialty = specialty,
+            ClinicName = "Specialty Test Clinic",
+            Address = "Specialty Address",
+            LicenseNumber = $"SPEC{specialty.Length}"
+        };
+
+        // Act
+        _context.Veterinarians.Add(veterinarian);
+        await _context.SaveChangesAsync();
+
+        // Assert
+        var savedVet = await _context.Veterinarians.FirstAsync();
+        savedVet.Specialty.Should().Be(specialty);
+    }
+
+    [Fact]
+    public async Task Veterinarian_UpdateTimestamp_ShouldUpdateCorrectly()
+    {
+        // Arrange
+        var veterinarian = new Veterinarian
+        {
+            FirstName = "Dr. Update",
+            LastName = "Test",
+            Email = "update@test.com",
+            Phone = "555-UPDATE",
+            Specialty = "General",
+            ClinicName = "Update Clinic",
+            Address = "Update Address",
+            LicenseNumber = "UPDATE123"
+        };
+
+        _context.Veterinarians.Add(veterinarian);
+        await _context.SaveChangesAsync();
+        var originalUpdateTime = veterinarian.UpdatedAt;
+
+        // Wait to ensure timestamp difference
+        await Task.Delay(10);
+
+        // Act
+        veterinarian.Phone = "555-UPDATED";
+        veterinarian.UpdatedAt = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+
+        // Assert
+        var updatedVet = await _context.Veterinarians.FirstAsync();
+        updatedVet.Phone.Should().Be("555-UPDATED");
+        updatedVet.UpdatedAt.Should().BeAfter(originalUpdateTime);
+    }
+    #endregion
+
+    #region Medication Model - Complete Coverage
+    [Fact]
+    public async Task Medication_CreateWithAllProperties_ShouldSaveSuccessfully()
+    {
+        // Arrange
+        var pet = new Pet
+        {
+            Name = "Mittens",
+            Species = "Cat",
+            Breed = "Tabby",
+            DateOfBirth = DateTime.Now.AddYears(-3),
+            Weight = 4.8m,
+            Color = "Orange",
+            MicrochipNumber = "CAT444555666"
+        };
+
+        _context.Pets.Add(pet);
+        await _context.SaveChangesAsync();
+
+        var medication = new Medication
+        {
+            PetId = pet.Id,
+            Name = "Amoxicillin",
+            Dosage = "250mg",
+            Frequency = "Twice daily",
+            StartDate = new DateTime(2024, 9, 1),
+            EndDate = new DateTime(2024, 9, 14),
+            Instructions = "Give with food to prevent stomach upset",
+            Prescriber = "Dr. Sarah Johnson",
+            IsActive = true
+        };
+
+        // Act
+        _context.Medications.Add(medication);
+        await _context.SaveChangesAsync();
+
+        // Assert
+        var savedMedication = await _context.Medications.FirstAsync();
+        savedMedication.PetId.Should().Be(pet.Id);
+        savedMedication.Name.Should().Be("Amoxicillin");
+        savedMedication.Dosage.Should().Be("250mg");
+        savedMedication.Frequency.Should().Be("Twice daily");
+        savedMedication.StartDate.Should().Be(new DateTime(2024, 9, 1));
+        savedMedication.EndDate.Should().Be(new DateTime(2024, 9, 14));
+        savedMedication.Instructions.Should().Be("Give with food to prevent stomach upset");
+        savedMedication.Prescriber.Should().Be("Dr. Sarah Johnson");
+        savedMedication.IsActive.Should().BeTrue();
+        savedMedication.Id.Should().BeGreaterThan(0);
+        savedMedication.CreatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(1));
+    }
+
+    [Fact]
+    public async Task Medication_WithNullableEndDate_ShouldSaveSuccessfully()
+    {
+        // Arrange
+        var pet = new Pet
+        {
+            Name = "Charlie",
+            Species = "Dog",
+            Breed = "Cocker Spaniel",
+            DateOfBirth = DateTime.Now.AddYears(-5),
+            Weight = 12.0m,
+            Color = "Black",
+            MicrochipNumber = "DOG777888999"
+        };
+
+        _context.Pets.Add(pet);
+        await _context.SaveChangesAsync();
+
+        var medication = new Medication
+        {
+            PetId = pet.Id,
+            Name = "Glucosamine",
+            Dosage = "500mg",
+            Frequency = "Once daily",
+            StartDate = DateTime.Now,
+            EndDate = null, // Ongoing medication
+            Instructions = "Long-term joint support supplement",
+            Prescriber = "Dr. Michael Brown",
+            IsActive = true
+        };
+
+        // Act
+        _context.Medications.Add(medication);
+        await _context.SaveChangesAsync();
+
+        // Assert
+        var savedMedication = await _context.Medications.FirstAsync();
+        savedMedication.EndDate.Should().BeNull();
+        savedMedication.Name.Should().Be("Glucosamine");
+        savedMedication.IsActive.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Medication_WithPetNavigation_ShouldLoadCorrectly()
+    {
+        // Arrange
+        var pet = new Pet
+        {
+            Name = "Fluffy",
+            Species = "Rabbit",
+            Breed = "Holland Lop",
+            DateOfBirth = DateTime.Now.AddYears(-2),
+            Weight = 1.5m,
+            Color = "White",
+            MicrochipNumber = "RAB123456789"
+        };
+
+        var medication = new Medication
+        {
+            Pet = pet, // Using navigation property
+            Name = "Metacam",
+            Dosage = "0.1ml",
+            Frequency = "Once daily",
+            StartDate = DateTime.Now,
+            Instructions = "Anti-inflammatory for rabbits",
+            Prescriber = "Dr. Exotic Pet Specialist",
+            IsActive = true
+        };
+
+        // Act
+        _context.Medications.Add(medication);
+        await _context.SaveChangesAsync();
+
+        // Assert
+        var medicationWithPet = await _context.Medications
+            .Include(m => m.Pet)
+            .FirstAsync();
+
+        medicationWithPet.Pet.Should().NotBeNull();
+        medicationWithPet.Pet.Name.Should().Be("Fluffy");
+        medicationWithPet.Pet.Species.Should().Be("Rabbit");
+        medicationWithPet.PetId.Should().Be(pet.Id);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task Medication_WithDifferentActiveStatus_ShouldSaveCorrectly(bool isActive)
+    {
+        // Arrange
+        var pet = new Pet
+        {
+            Name = "ActiveTest",
+            Species = "Dog",
+            Breed = "Test",
+            DateOfBirth = DateTime.Now.AddYears(-1),
+            Weight = 10.0m,
+            Color = "Test",
+            MicrochipNumber = "TEST456789123"
+        };
+
+        _context.Pets.Add(pet);
+        await _context.SaveChangesAsync();
+
+        var medication = new Medication
+        {
+            PetId = pet.Id,
+            Name = "Test Medication",
+            Dosage = "Test",
+            Frequency = "Test",
+            StartDate = DateTime.Now,
+            Instructions = "Test instructions",
+            Prescriber = "Test Prescriber",
+            IsActive = isActive
+        };
+
+        // Act
+        _context.Medications.Add(medication);
+        await _context.SaveChangesAsync();
+
+        // Assert
+        var savedMedication = await _context.Medications.FirstAsync();
+        savedMedication.IsActive.Should().Be(isActive);
+    }
+    #endregion
+
+    #region UserProfile Model - Complete Coverage
+    [Fact]
+    public async Task UserProfile_CreateWithAllProperties_ShouldSaveSuccessfully()
+    {
+        // Arrange
+        var identityUser = new IdentityUser
+        {
+            Id = "user123",
+            UserName = "john.doe@example.com",
+            Email = "john.doe@example.com",
+            EmailConfirmed = true
+        };
+
+        // Note: In a real scenario, you'd add this through UserManager
+        // For testing, we'll set it directly
+        var userProfile = new UserProfile
+        {
+            FirstName = "John",
+            LastName = "Doe",
+            Email = "john.doe@example.com",
+            Address = "123 Main Street, Anytown, AT 12345",
+            Phone = "+1-555-0123",
+            IdentityUserId = identityUser.Id
+        };
+
+        // Act
+        _context.UserProfiles.Add(userProfile);
+        await _context.SaveChangesAsync();
+
+        // Assert
+        var savedProfile = await _context.UserProfiles.FirstAsync();
+        savedProfile.FirstName.Should().Be("John");
+        savedProfile.LastName.Should().Be("Doe");
+        savedProfile.Email.Should().Be("john.doe@example.com");
+        savedProfile.Address.Should().Be("123 Main Street, Anytown, AT 12345");
+        savedProfile.Phone.Should().Be("+1-555-0123");
+        savedProfile.IdentityUserId.Should().Be("user123");
+        savedProfile.Id.Should().BeGreaterThan(0);
+        savedProfile.CreatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(1));
+        savedProfile.UpdatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(1));
+    }
+
+    [Fact]
+    public async Task UserProfile_WithOwnedPetsNavigation_ShouldInitializeCollection()
+    {
+        // Arrange
+        var userProfile = new UserProfile
+        {
+            FirstName = "Jane",
+            LastName = "Smith",
+            Email = "jane.smith@example.com",
+            Address = "456 Oak Avenue",
+            Phone = "555-0456",
+            IdentityUserId = "user456"
+        };
+
+        // Act
+        _context.UserProfiles.Add(userProfile);
+        await _context.SaveChangesAsync();
+
+        // Assert
+        var savedProfile = await _context.UserProfiles
+            .Include(up => up.OwnedPets)
+            .FirstAsync();
+
+        savedProfile.OwnedPets.Should().NotBeNull();
+        savedProfile.OwnedPets.Should().BeEmpty();
+    }
+
+    [Theory]
+    [InlineData("John", "Doe")]
+    [InlineData("María", "García")]
+    [InlineData("李", "小明")]
+    [InlineData("O'Connor", "MacPherson")]
+    public async Task UserProfile_WithDifferentNameFormats_ShouldSaveSuccessfully(string firstName, string lastName)
+    {
+        // Arrange
+        var userProfile = new UserProfile
+        {
+            FirstName = firstName,
+            LastName = lastName,
+            Email = $"{firstName.ToLower()}.{lastName.ToLower()}@test.com",
+            Address = "Test Address",
+            Phone = "555-TEST",
+            IdentityUserId = Guid.NewGuid().ToString()
+        };
+
+        // Act
+        _context.UserProfiles.Add(userProfile);
+        await _context.SaveChangesAsync();
+
+        // Assert
+        var savedProfile = await _context.UserProfiles.FirstAsync();
+        savedProfile.FirstName.Should().Be(firstName);
+        savedProfile.LastName.Should().Be(lastName);
+    }
+    #endregion
+
+    #region PetOwner Model - Complete Coverage
+    [Fact]
+    public async Task PetOwner_CreateWithAllProperties_ShouldSaveSuccessfully()
+    {
+        // Arrange
+        var userProfile = new UserProfile
+        {
+            FirstName = "Pet",
+            LastName = "Owner",
+            Email = "owner@example.com",
+            Address = "Owner Address",
+            Phone = "555-OWNER",
+            IdentityUserId = "owner123"
+        };
+
+        var pet = new Pet
+        {
+            Name = "Owned Pet",
+            Species = "Dog",
+            Breed = "Ownership Breed",
+            DateOfBirth = DateTime.Now.AddYears(-2),
+            Weight = 20.0m,
+            Color = "Owned Color",
+            MicrochipNumber = "OWN123456789"
+        };
+
+        _context.UserProfiles.Add(userProfile);
+        _context.Pets.Add(pet);
+        await _context.SaveChangesAsync();
+
+        var petOwner = new PetOwner
+        {
+            PetId = pet.Id,
+            UserProfileId = userProfile.Id,
+            IsPrimaryOwner = true
+        };
+
+        // Act
+        _context.PetOwners.Add(petOwner);
+        await _context.SaveChangesAsync();
+
+        // Assert
+        var savedPetOwner = await _context.PetOwners.FirstAsync();
+        savedPetOwner.PetId.Should().Be(pet.Id);
+        savedPetOwner.UserProfileId.Should().Be(userProfile.Id);
+        savedPetOwner.IsPrimaryOwner.Should().BeTrue();
+        savedPetOwner.Id.Should().BeGreaterThan(0);
+        savedPetOwner.CreatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(1));
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task PetOwner_WithDifferentPrimaryOwnerStatus_ShouldSaveCorrectly(bool isPrimary)
+    {
+        // Arrange
+        var userProfile = new UserProfile
+        {
+            FirstName = "Primary",
+            LastName = "Test",
+            Email = "primary@test.com",
+            Address = "Primary Address",
+            Phone = "555-PRIMARY",
+            IdentityUserId = "primary123"
+        };
+
+        var pet = new Pet
+        {
+            Name = "Primary Pet",
+            Species = "Cat",
+            Breed = "Primary Breed",
+            DateOfBirth = DateTime.Now.AddYears(-1),
+            Weight = 5.0m,
+            Color = "Primary Color",
+            MicrochipNumber = "PRI123456789"
+        };
+
+        _context.UserProfiles.Add(userProfile);
+        _context.Pets.Add(pet);
+        await _context.SaveChangesAsync();
+
+        var petOwner = new PetOwner
+        {
+            PetId = pet.Id,
+            UserProfileId = userProfile.Id,
+            IsPrimaryOwner = isPrimary
+        };
+
+        // Act
+        _context.PetOwners.Add(petOwner);
+        await _context.SaveChangesAsync();
+
+        // Assert
+        var savedPetOwner = await _context.PetOwners.FirstAsync();
+        savedPetOwner.IsPrimaryOwner.Should().Be(isPrimary);
+    }
+
+    [Fact]
+    public async Task PetOwner_WithNavigationProperties_ShouldLoadCorrectly()
+    {
+        // Arrange
+        var userProfile = new UserProfile
+        {
+            FirstName = "Navigation",
+            LastName = "User",
+            Email = "nav@user.com",
+            Address = "Navigation Address",
+            Phone = "555-NAV",
+            IdentityUserId = "nav123"
+        };
+
+        var pet = new Pet
+        {
+            Name = "Navigation Pet",
+            Species = "Bird",
+            Breed = "Navigation Breed",
+            DateOfBirth = DateTime.Now.AddMonths(-6),
+            Weight = 0.5m,
+            Color = "Navigation Color",
+            MicrochipNumber = "NAV456789123"
+        };
+
+        var petOwner = new PetOwner
+        {
+            Pet = pet, // Using navigation properties
+            UserProfile = userProfile,
+            IsPrimaryOwner = true
+        };
+
+        // Act
+        _context.PetOwners.Add(petOwner);
+        await _context.SaveChangesAsync();
+
+        // Assert
+        var ownerWithNav = await _context.PetOwners
+            .Include(po => po.Pet)
+            .Include(po => po.UserProfile)
+            .FirstAsync();
+
+        ownerWithNav.Pet.Should().NotBeNull();
+        ownerWithNav.Pet.Name.Should().Be("Navigation Pet");
+        ownerWithNav.UserProfile.Should().NotBeNull();
+        ownerWithNav.UserProfile.FirstName.Should().Be("Navigation");
+        ownerWithNav.PetId.Should().Be(pet.Id);
+        ownerWithNav.UserProfileId.Should().Be(userProfile.Id);
+    }
+    #endregion
+
+    #region Model Relationships - Complete Coverage
+    [Fact]
+    public async Task Pet_WithAllRelatedEntities_ShouldLoadCorrectly()
+    {
+        // Arrange
+        var veterinarian = new Veterinarian
+        {
+            FirstName = "Dr. Full",
+            LastName = "Test",
+            Email = "full@test.com",
+            Phone = "555-FULL",
+            Specialty = "Full Testing",
+            ClinicName = "Full Test Clinic",
+            Address = "Full Test Address",
+            LicenseNumber = "FULL123456"
+        };
+
+        var userProfile = new UserProfile
+        {
+            FirstName = "Full",
+            LastName = "Owner",
+            Email = "full.owner@test.com",
+            Address = "Full Owner Address",
+            Phone = "555-FULLOWN",
+            IdentityUserId = "fullowner123"
+        };
+
+        var pet = new Pet
+        {
+            Name = "Full Test Pet",
+            Species = "Dog",
+            Breed = "Full Test Breed",
+            DateOfBirth = DateTime.Now.AddYears(-2),
+            Weight = 25.0m,
+            Color = "Full Test Color",
+            MicrochipNumber = "FULL123456789"
+        };
+
+        var petOwner = new PetOwner
+        {
+            Pet = pet,
+            UserProfile = userProfile,
+            IsPrimaryOwner = true
+        };
+
+        var healthRecord = new HealthRecord
+        {
+            Pet = pet,
+            Veterinarian = veterinarian,
+            RecordType = "Full Test Record",
+            Description = "Complete test record",
+            RecordDate = DateTime.Now.AddMonths(-1),
+            Notes = "Full test notes",
+            Attachments = "full_test.pdf"
+        };
+
+        var appointment = new Appointment
+        {
+            Pet = pet,
+            Veterinarian = veterinarian,
+            AppointmentDate = DateTime.Now.AddDays(7),
+            AppointmentTime = new TimeSpan(10, 0, 0),
+            AppointmentType = "Full Test",
+            Notes = "Full test appointment",
+            Status = "Scheduled"
+        };
+
+        var medication = new Medication
+        {
+            Pet = pet,
+            Name = "Full Test Medicine",
+            Dosage = "Full Test Dosage",
+            Frequency = "Full Test Frequency",
+            StartDate = DateTime.Now,
+            Instructions = "Full test instructions",
+            Prescriber = "Dr. Full Test",
+            IsActive = true
+        };
+
+        // Act
+        _context.Veterinarians.Add(veterinarian);
+        _context.UserProfiles.Add(userProfile);
+        _context.Pets.Add(pet);
+        _context.PetOwners.Add(petOwner);
+        _context.HealthRecords.Add(healthRecord);
+        _context.Appointments.Add(appointment);
+        _context.Medications.Add(medication);
+        await _context.SaveChangesAsync();
+
+        // Assert
+        var fullPet = await _context.Pets
+            .Include(p => p.Owners)
+                .ThenInclude(o => o.UserProfile)
+            .Include(p => p.HealthRecords)
+                .ThenInclude(hr => hr.Veterinarian)
+            .Include(p => p.Appointments)
+                .ThenInclude(a => a.Veterinarian)
+            .Include(p => p.Medications)
+            .FirstAsync();
+
+        fullPet.Name.Should().Be("Full Test Pet");
+        fullPet.Owners.Should().HaveCount(1);
+        fullPet.Owners.First().UserProfile.FirstName.Should().Be("Full");
+        fullPet.HealthRecords.Should().HaveCount(1);
+        fullPet.HealthRecords.First().Veterinarian.FirstName.Should().Be("Dr. Full");
+        fullPet.Appointments.Should().HaveCount(1);
+        fullPet.Appointments.First().Veterinarian.LastName.Should().Be("Test");
+        fullPet.Medications.Should().HaveCount(1);
+        fullPet.Medications.First().Name.Should().Be("Full Test Medicine");
+    }
+
+    [Fact]
+    public async Task MultipleOwnership_PetWithPrimaryAndSecondaryOwners_ShouldWorkCorrectly()
+    {
+        // Arrange
+        var primaryOwner = new UserProfile
+        {
+            FirstName = "Primary",
+            LastName = "Owner",
+            Email = "primary@owner.com",
+            Address = "Primary Address",
+            Phone = "555-PRIMARY",
+            IdentityUserId = "primary123"
+        };
+
+        var secondaryOwner = new UserProfile
+        {
+            FirstName = "Secondary",
+            LastName = "Owner",
+            Email = "secondary@owner.com",
+            Address = "Secondary Address",
+            Phone = "555-SECOND",
+            IdentityUserId = "secondary123"
+        };
+
+        var pet = new Pet
+        {
+            Name = "Shared Pet",
+            Species = "Dog",
+            Breed = "Shared Breed",
+            DateOfBirth = DateTime.Now.AddYears(-3),
+            Weight = 30.0m,
+            Color = "Shared Color",
+            MicrochipNumber = "SHARE123456789"
+        };
+
+        var primaryOwnership = new PetOwner
+        {
+            Pet = pet,
+            UserProfile = primaryOwner,
+            IsPrimaryOwner = true
+        };
+
+        var secondaryOwnership = new PetOwner
+        {
+            Pet = pet,
+            UserProfile = secondaryOwner,
+            IsPrimaryOwner = false
+        };
+
+        // Act
+        _context.UserProfiles.AddRange(primaryOwner, secondaryOwner);
+        _context.Pets.Add(pet);
+        _context.PetOwners.AddRange(primaryOwnership, secondaryOwnership);
+        await _context.SaveChangesAsync();
+
+        // Assert
+        var sharedPet = await _context.Pets
+            .Include(p => p.Owners)
+                .ThenInclude(o => o.UserProfile)
+            .FirstAsync();
+
+        sharedPet.Owners.Should().HaveCount(2);
+
+        var primary = sharedPet.Owners.First(o => o.IsPrimaryOwner);
+        var secondary = sharedPet.Owners.First(o => !o.IsPrimaryOwner);
+
+        primary.UserProfile.FirstName.Should().Be("Primary");
+        secondary.UserProfile.FirstName.Should().Be("Secondary");
+    }
+    #endregion
+
+    #region Identity Models - Complete Coverage
+    [Fact]
+    public void IdentityUser_WithStandardProperties_ShouldSetCorrectly()
+    {
+        // Arrange & Act
+        var user = new IdentityUser
+        {
+            Id = "identity123",
+            UserName = "testuser@petpal.com",
+            NormalizedUserName = "TESTUSER@PETPAL.COM",
+            Email = "testuser@petpal.com",
+            NormalizedEmail = "TESTUSER@PETPAL.COM",
+            EmailConfirmed = true,
+            PhoneNumber = "+1-555-0123",
+            PhoneNumberConfirmed = true,
+            TwoFactorEnabled = false,
+            LockoutEnabled = true,
+            AccessFailedCount = 0
+        };
+
+        // Assert
+        user.Id.Should().Be("identity123");
+        user.UserName.Should().Be("testuser@petpal.com");
+        user.NormalizedUserName.Should().Be("TESTUSER@PETPAL.COM");
+        user.Email.Should().Be("testuser@petpal.com");
+        user.NormalizedEmail.Should().Be("TESTUSER@PETPAL.COM");
+        user.EmailConfirmed.Should().BeTrue();
+        user.PhoneNumber.Should().Be("+1-555-0123");
+        user.PhoneNumberConfirmed.Should().BeTrue();
+        user.TwoFactorEnabled.Should().BeFalse();
+        user.LockoutEnabled.Should().BeTrue();
+        user.AccessFailedCount.Should().Be(0);
+    }
+
+    [Fact]
+    public void IdentityRole_WithStandardProperties_ShouldSetCorrectly()
+    {
+        // Arrange & Act
+        var role = new IdentityRole
+        {
+            Id = "role123",
+            Name = "Admin",
+            NormalizedName = "ADMIN",
+            ConcurrencyStamp = Guid.NewGuid().ToString()
+        };
+
+        // Assert
+        role.Id.Should().Be("role123");
+        role.Name.Should().Be("Admin");
+        role.NormalizedName.Should().Be("ADMIN");
+        role.ConcurrencyStamp.Should().NotBeNullOrEmpty();
+    }
+
+    [Theory]
+    [InlineData("Admin")]
+    [InlineData("User")]
+    [InlineData("Veterinarian")]
+    public void IdentityRole_WithDifferentRoleNames_ShouldCreateCorrectly(string roleName)
+    {
+        // Arrange & Act
+        var role = new IdentityRole(roleName);
+
+        // Assert
+        role.Name.Should().Be(roleName);
+        role.Id.Should().NotBeNullOrEmpty();
+    }
+    #endregion
+
+    public void Dispose()
+    {
+        _context.Dispose();
     }
 }
