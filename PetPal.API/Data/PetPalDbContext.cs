@@ -17,6 +17,7 @@ public class PetPalDbContext : IdentityDbContext<IdentityUser>
     public DbSet<Appointment> Appointments { get; set; }
     public DbSet<Medication> Medications { get; set; }
     public DbSet<Veterinarian> Veterinarians { get; set; }
+    public DbSet<TrainingProgress> TrainingProgress { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -84,6 +85,13 @@ public class PetPalDbContext : IdentityDbContext<IdentityUser>
             .HasOne(m => m.Pet)
             .WithMany(p => p.Medications)
             .HasForeignKey(m => m.PetId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // Configure TrainingProgress relationships
+        modelBuilder.Entity<TrainingProgress>()
+            .HasOne(tp => tp.Pet)
+            .WithMany(p => p.TrainingProgress)
+            .HasForeignKey(tp => tp.PetId)
             .OnDelete(DeleteBehavior.Cascade);
 
         // Explicitly ignore Address as a standalone entity

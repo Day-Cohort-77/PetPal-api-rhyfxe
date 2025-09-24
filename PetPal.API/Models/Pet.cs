@@ -15,6 +15,7 @@ public class Pet
     public List<HealthRecord> HealthRecords { get; set; } = new List<HealthRecord>();
     public List<Appointment> Appointments { get; set; } = new List<Appointment>();
     public List<Medication> Medications { get; set; } = new List<Medication>();
+    public List<TrainingProgress> TrainingProgress { get; set; } = new List<TrainingProgress>();
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 }
