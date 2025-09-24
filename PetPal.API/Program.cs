@@ -37,8 +37,20 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.Cookie.Name = "PetPalAuth";
     options.Cookie.HttpOnly = true;
     options.ExpireTimeSpan = TimeSpan.FromHours(8);
-    options.Cookie.SameSite = SameSiteMode.None; // Required for cross-origin requests
-    options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // Required when SameSite=None
+
+    if (builder.Environment.IsDevelopment())
+    {
+        // Development settings for localhost
+        options.Cookie.SameSite = SameSiteMode.Lax; // Less strict for localhost
+        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest; // Allow HTTP in dev
+    }
+    else
+    {
+        // Production settings
+        options.Cookie.SameSite = SameSiteMode.None; // Required for cross-origin requests
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // Require HTTPS in production
+    }
+
     options.SlidingExpiration = true;
 
     // Prevent redirects - return status codes instead
