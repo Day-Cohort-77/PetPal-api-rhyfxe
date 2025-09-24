@@ -106,7 +106,13 @@ public static class AuthEndpoints
                         FirstName = "Admin",
                         LastName = "User",
                         Email = identityUser.Email,
-                        Address = "Admin Address",
+                        Address = new Address
+                        {
+                            Street = "Admin Address",
+                            City = "Admin City",
+                            State = "CA",
+                            ZipCode = "90210"
+                        },
                         Phone = "Admin Phone",
                         IdentityUserId = identityUser.Id,
                         CreatedAt = DateTime.UtcNow,
@@ -176,7 +182,13 @@ public static class AuthEndpoints
                         FirstName = "Admin",
                         LastName = "User",
                         Email = identityUser.Email,
-                        Address = "Admin Address",
+                        Address = new Address
+                        {
+                            Street = "Admin Address",
+                            City = "Admin City",
+                            State = "CA",
+                            ZipCode = "90210"
+                        },
                         Phone = "Admin Phone",
                         IdentityUserId = identityUser.Id,
                         CreatedAt = DateTime.UtcNow,
@@ -196,6 +208,51 @@ public static class AuthEndpoints
             var roles = await userManager.GetRolesAsync(identityUser);
 
             // Return the user profile
+            var userProfileDto = mapper.Map<UserProfileDto>(userProfile);
+            userProfileDto.Roles = roles.ToList();
+
+            return Results.Ok(userProfileDto);
+        }).RequireAuthorization();
+
+        // Update current user's profile
+        app.MapPut("/auth/profile", async (
+            [FromBody] UpdateUserProfileDto updateDto,
+            ClaimsPrincipal user,
+            UserManager<IdentityUser> userManager,
+            PetPalDbContext db,
+            IMapper mapper) =>
+        {
+            var identityUserId = user.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (identityUserId == null)
+            {
+                return Results.Unauthorized();
+            }
+
+            var identityUser = await userManager.FindByIdAsync(identityUserId);
+            if (identityUser == null)
+            {
+                return Results.Unauthorized();
+            }
+
+            var userProfile = await db.UserProfiles.FirstOrDefaultAsync(up => up.IdentityUserId == identityUserId);
+            if (userProfile == null)
+            {
+                return Results.NotFound("User profile not found.");
+            }
+
+            // Map the update DTO to the existing user profile
+            mapper.Map(updateDto, userProfile);
+
+            // Update the timestamp
+            userProfile.UpdatedAt = DateTime.UtcNow;
+
+            // Save changes
+            await db.SaveChangesAsync();
+
+            // Get the user's roles for the response
+            var roles = await userManager.GetRolesAsync(identityUser);
+
+            // Return the updated user profile
             var userProfileDto = mapper.Map<UserProfileDto>(userProfile);
             userProfileDto.Roles = roles.ToList();
 

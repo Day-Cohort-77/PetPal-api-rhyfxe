@@ -85,5 +85,19 @@ public class PetPalDbContext : IdentityDbContext<IdentityUser>
             .WithMany(p => p.Medications)
             .HasForeignKey(m => m.PetId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // Explicitly ignore Address as a standalone entity
+        modelBuilder.Ignore<Address>();
+
+        // Configure Address as an owned entity type
+        modelBuilder.Entity<UserProfile>()
+            .OwnsOne(u => u.Address, address =>
+            {
+                address.Property(a => a.Street).HasColumnName("Street");
+                address.Property(a => a.City).HasColumnName("City");
+                address.Property(a => a.State).HasColumnName("State");
+                address.Property(a => a.ZipCode).HasColumnName("ZipCode");
+            });
+
     }
 }

@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using PetPal.API.Data;
@@ -11,9 +12,11 @@ using PetPal.API.Data;
 namespace PetPal.API.Migrations
 {
     [DbContext(typeof(PetPalDbContext))]
-    partial class PetPalDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250924160048_UpdateUserProfileWithNestedAddress")]
+    partial class UpdateUserProfileWithNestedAddress
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
