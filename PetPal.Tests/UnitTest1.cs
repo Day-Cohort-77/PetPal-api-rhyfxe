@@ -762,8 +762,15 @@ public class ComprehensiveModelTests : IDisposable
             FirstName = "John",
             LastName = "Doe",
             Email = "john.doe@example.com",
-            Address = "123 Main Street, Anytown, AT 12345",
+            Address = new Address
+            {
+                Street = "123 Main Street",
+                City = "Anytown",
+                State = "AT",
+                ZipCode = "12345"
+            },
             Phone = "+1-555-0123",
+            PreferredContactMethod = "Email",
             IdentityUserId = identityUser.Id
         };
 
@@ -776,8 +783,13 @@ public class ComprehensiveModelTests : IDisposable
         savedProfile.FirstName.Should().Be("John");
         savedProfile.LastName.Should().Be("Doe");
         savedProfile.Email.Should().Be("john.doe@example.com");
-        savedProfile.Address.Should().Be("123 Main Street, Anytown, AT 12345");
+        savedProfile.Address.Should().NotBeNull();
+        savedProfile.Address.Street.Should().Be("123 Main Street");
+        savedProfile.Address.City.Should().Be("Anytown");
+        savedProfile.Address.State.Should().Be("AT");
+        savedProfile.Address.ZipCode.Should().Be("12345");
         savedProfile.Phone.Should().Be("+1-555-0123");
+        savedProfile.PreferredContactMethod.Should().Be("Email");
         savedProfile.IdentityUserId.Should().Be("user123");
         savedProfile.Id.Should().BeGreaterThan(0);
         savedProfile.CreatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(1));
@@ -793,8 +805,15 @@ public class ComprehensiveModelTests : IDisposable
             FirstName = "Jane",
             LastName = "Smith",
             Email = "jane.smith@example.com",
-            Address = "456 Oak Avenue",
+            Address = new Address
+            {
+                Street = "456 Oak Avenue",
+                City = "Springfield",
+                State = "IL",
+                ZipCode = "62701"
+            },
             Phone = "555-0456",
+            PreferredContactMethod = "Phone",
             IdentityUserId = "user456"
         };
 
@@ -809,6 +828,8 @@ public class ComprehensiveModelTests : IDisposable
 
         savedProfile.OwnedPets.Should().NotBeNull();
         savedProfile.OwnedPets.Should().BeEmpty();
+        savedProfile.Address.Street.Should().Be("456 Oak Avenue");
+        savedProfile.PreferredContactMethod.Should().Be("Phone");
     }
 
     [Theory]
@@ -824,8 +845,15 @@ public class ComprehensiveModelTests : IDisposable
             FirstName = firstName,
             LastName = lastName,
             Email = $"{firstName.ToLower()}.{lastName.ToLower()}@test.com",
-            Address = "Test Address",
+            Address = new Address
+            {
+                Street = "Test Street",
+                City = "Test City",
+                State = "TS",
+                ZipCode = "12345"
+            },
             Phone = "555-TEST",
+            PreferredContactMethod = "Email",
             IdentityUserId = Guid.NewGuid().ToString()
         };
 
@@ -837,6 +865,145 @@ public class ComprehensiveModelTests : IDisposable
         var savedProfile = await _context.UserProfiles.FirstAsync();
         savedProfile.FirstName.Should().Be(firstName);
         savedProfile.LastName.Should().Be(lastName);
+        savedProfile.Address.Should().NotBeNull();
+        savedProfile.Address.City.Should().Be("Test City");
+    }
+
+    [Fact]
+    public async Task UserProfile_WithEmptyAddress_ShouldSaveSuccessfully()
+    {
+        // Arrange
+        var userProfile = new UserProfile
+        {
+            FirstName = "Empty",
+            LastName = "Address",
+            Email = "empty@address.com",
+            Address = new Address(), // Empty address - all fields will be empty strings
+            Phone = "555-EMPTY",
+            PreferredContactMethod = "Email",
+            IdentityUserId = "emptyaddress123"
+        };
+
+        // Act
+        _context.UserProfiles.Add(userProfile);
+        await _context.SaveChangesAsync();
+
+        // Assert
+        var savedProfile = await _context.UserProfiles.FirstAsync();
+        savedProfile.Address.Should().NotBeNull();
+        savedProfile.Address.Street.Should().Be(string.Empty);
+        savedProfile.Address.City.Should().Be(string.Empty);
+        savedProfile.Address.State.Should().Be(string.Empty);
+        savedProfile.Address.ZipCode.Should().Be(string.Empty);
+    }
+
+    [Theory]
+    [InlineData("email")]
+    [InlineData("phone")]
+    [InlineData("sms")]
+    public async Task UserProfile_WithDifferentContactMethods_ShouldSaveSuccessfully(string contactMethod)
+    {
+        // Arrange
+        var userProfile = new UserProfile
+        {
+            FirstName = "Contact",
+            LastName = "Method",
+            Email = $"contact.{contactMethod}@test.com",
+            Address = new Address
+            {
+                Street = "Contact Street",
+                City = "Contact City",
+                State = "CC",
+                ZipCode = "54321"
+            },
+            Phone = "555-CONTACT",
+            PreferredContactMethod = contactMethod,
+            IdentityUserId = $"contact{contactMethod}123"
+        };
+
+        // Act
+        _context.UserProfiles.Add(userProfile);
+        await _context.SaveChangesAsync();
+
+        // Assert
+        var savedProfile = await _context.UserProfiles.FirstAsync();
+        savedProfile.PreferredContactMethod.Should().Be(contactMethod);
+    }
+    #endregion
+
+    #region Address Model - Complete Coverage
+    [Fact]
+    public void Address_CreateWithAllProperties_ShouldSetCorrectly()
+    {
+        // Arrange & Act
+        var address = new Address
+        {
+            Street = "123 Main Street",
+            City = "Anytown",
+            State = "CA",
+            ZipCode = "90210"
+        };
+
+        // Assert
+        address.Street.Should().Be("123 Main Street");
+        address.City.Should().Be("Anytown");
+        address.State.Should().Be("CA");
+        address.ZipCode.Should().Be("90210");
+    }
+
+    [Fact]
+    public void Address_CreateEmpty_ShouldHaveEmptyStrings()
+    {
+        // Arrange & Act
+        var address = new Address();
+
+        // Assert
+        address.Street.Should().Be(string.Empty);
+        address.City.Should().Be(string.Empty);
+        address.State.Should().Be(string.Empty);
+        address.ZipCode.Should().Be(string.Empty);
+    }
+
+    [Theory]
+    [InlineData("123 Main St", "New York", "NY", "10001")]
+    [InlineData("456 Oak Ave", "Los Angeles", "CA", "90210")]
+    [InlineData("789 Pine Rd", "Chicago", "IL", "60601")]
+    [InlineData("321 Elm Dr", "Houston", "TX", "77001")]
+    public void Address_WithDifferentFormats_ShouldSetCorrectly(string street, string city, string state, string zipCode)
+    {
+        // Arrange & Act
+        var address = new Address
+        {
+            Street = street,
+            City = city,
+            State = state,
+            ZipCode = zipCode
+        };
+
+        // Assert
+        address.Street.Should().Be(street);
+        address.City.Should().Be(city);
+        address.State.Should().Be(state);
+        address.ZipCode.Should().Be(zipCode);
+    }
+
+    [Fact]
+    public void Address_WithSpecialCharacters_ShouldHandleCorrectly()
+    {
+        // Arrange & Act
+        var address = new Address
+        {
+            Street = "123 O'Connor St. Apt #4B",
+            City = "Saint-Étienne",
+            State = "N/A",
+            ZipCode = "K1A 0A6" // Canadian postal code format
+        };
+
+        // Assert
+        address.Street.Should().Be("123 O'Connor St. Apt #4B");
+        address.City.Should().Be("Saint-Étienne");
+        address.State.Should().Be("N/A");
+        address.ZipCode.Should().Be("K1A 0A6");
     }
     #endregion
 
@@ -850,8 +1017,15 @@ public class ComprehensiveModelTests : IDisposable
             FirstName = "Pet",
             LastName = "Owner",
             Email = "owner@example.com",
-            Address = "Owner Address",
+            Address = new Address
+            {
+                Street = "123 Owner Street",
+                City = "Owner City",
+                State = "OC",
+                ZipCode = "12345"
+            },
             Phone = "555-OWNER",
+            PreferredContactMethod = "Email",
             IdentityUserId = "owner123"
         };
 
@@ -901,8 +1075,15 @@ public class ComprehensiveModelTests : IDisposable
             FirstName = "Primary",
             LastName = "Test",
             Email = "primary@test.com",
-            Address = "Primary Address",
+            Address = new Address
+            {
+                Street = "123 Primary Street",
+                City = "Primary City",
+                State = "PC",
+                ZipCode = "54321"
+            },
             Phone = "555-PRIMARY",
+            PreferredContactMethod = "Phone",
             IdentityUserId = "primary123"
         };
 
@@ -946,8 +1127,15 @@ public class ComprehensiveModelTests : IDisposable
             FirstName = "Navigation",
             LastName = "User",
             Email = "nav@user.com",
-            Address = "Navigation Address",
+            Address = new Address
+            {
+                Street = "123 Navigation Street",
+                City = "Navigation City",
+                State = "NC",
+                ZipCode = "98765"
+            },
             Phone = "555-NAV",
+            PreferredContactMethod = "SMS",
             IdentityUserId = "nav123"
         };
 
@@ -1010,8 +1198,15 @@ public class ComprehensiveModelTests : IDisposable
             FirstName = "Full",
             LastName = "Owner",
             Email = "full.owner@test.com",
-            Address = "Full Owner Address",
+            Address = new Address
+            {
+                Street = "123 Full Owner Street",
+                City = "Full City",
+                State = "FC",
+                ZipCode = "11111"
+            },
             Phone = "555-FULLOWN",
+            PreferredContactMethod = "SMS",
             IdentityUserId = "fullowner123"
         };
 
@@ -1108,8 +1303,15 @@ public class ComprehensiveModelTests : IDisposable
             FirstName = "Primary",
             LastName = "Owner",
             Email = "primary@owner.com",
-            Address = "Primary Address",
+            Address = new Address
+            {
+                Street = "123 Primary Owner Street",
+                City = "Primary City",
+                State = "PO",
+                ZipCode = "22222"
+            },
             Phone = "555-PRIMARY",
+            PreferredContactMethod = "Email",
             IdentityUserId = "primary123"
         };
 
@@ -1118,8 +1320,15 @@ public class ComprehensiveModelTests : IDisposable
             FirstName = "Secondary",
             LastName = "Owner",
             Email = "secondary@owner.com",
-            Address = "Secondary Address",
+            Address = new Address
+            {
+                Street = "456 Secondary Owner Street",
+                City = "Secondary City",
+                State = "SO",
+                ZipCode = "33333"
+            },
             Phone = "555-SECOND",
+            PreferredContactMethod = "Phone",
             IdentityUserId = "secondary123"
         };
 
