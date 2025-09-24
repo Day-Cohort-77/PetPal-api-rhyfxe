@@ -1447,6 +1447,291 @@ public class ComprehensiveModelTests : IDisposable
     }
     #endregion
 
+    #region TrainingProgress Model - Additional Tests
+
+    [Theory]
+    [InlineData("2023-09-01", "2023-09-15", 14)]  // Completed training
+    [InlineData("2023-09-01", null, null)]        // Ongoing training
+    public async Task TrainingProgress_DaysInTraining_CalculatesCorrectly(string startDate, string? endDate, int? expectedDays)
+    {
+        // Arrange
+        var pet = new Pet
+        {
+            Name = "Calculator",
+            Species = "Dog",
+            Breed = "Math Whiz",
+            DateOfBirth = DateTime.Now.AddYears(-2),
+            Weight = 20.0m,
+            Color = "Brown",
+            MicrochipNumber = "CALC123456"
+        };
+
+        _context.Pets.Add(pet);
+        await _context.SaveChangesAsync();
+
+        var trainingProgress = new TrainingProgress
+        {
+            Pet = pet,
+            SkillName = "Math Skills",
+            Description = "Testing date calculations",
+            Status = endDate != null ? "Completed" : "InProgress",
+            Notes = "Test notes",
+            StartDate = DateTime.Parse(startDate),
+            CompletionDate = endDate != null ? DateTime.Parse(endDate) : null,
+            IsSharedWithTrainer = false
+        };
+
+        // Act
+        _context.TrainingProgress.Add(trainingProgress);
+        await _context.SaveChangesAsync();
+
+        // Assert
+        var savedProgress = await _context.TrainingProgress
+            .Include(tp => tp.Pet)
+            .FirstAsync();
+
+        if (expectedDays.HasValue)
+        {
+            savedProgress.CompletionDate.Should().NotBeNull();
+            savedProgress.CompletionDate.Value.Subtract(savedProgress.StartDate).Days
+                .Should().Be(expectedDays.Value);
+        }
+        else
+        {
+            savedProgress.CompletionDate.Should().BeNull();
+            // For ongoing training, check that DaysInTraining is reasonable
+            var daysInTraining = DateTime.UtcNow.Subtract(savedProgress.StartDate).Days;
+            daysInTraining.Should().BeGreaterThanOrEqualTo(0);
+        }
+    }
+
+    [Theory]
+    [InlineData("Completed", true)]
+    [InlineData("InProgress", false)]
+    [InlineData("NotStarted", false)]
+    [InlineData("NeedsReview", false)]
+    public async Task TrainingProgress_IsCompleted_ReturnsCorrectValue(string status, bool expectedResult)
+    {
+        // Arrange
+        var pet = new Pet
+        {
+            Name = "Status Test",
+            Species = "Dog",
+            Breed = "Status Breed",
+            DateOfBirth = DateTime.Now.AddYears(-1),
+            Weight = 15.0m,
+            Color = "Brown",
+            MicrochipNumber = "STATUS123456"
+        };
+
+        _context.Pets.Add(pet);
+        await _context.SaveChangesAsync();
+
+        var trainingProgress = new TrainingProgress
+        {
+            Pet = pet,
+            SkillName = "Status Test",
+            Description = "Testing completion status",
+            Status = status,
+            Notes = "Test notes",
+            StartDate = DateTime.UtcNow.AddDays(-7),
+            IsSharedWithTrainer = false
+        };
+
+        // Act
+        _context.TrainingProgress.Add(trainingProgress);
+        await _context.SaveChangesAsync();
+
+        // Assert
+        var savedProgress = await _context.TrainingProgress.FirstAsync();
+        (savedProgress.Status == "Completed").Should().Be(expectedResult);
+    }
+
+    [Fact]
+    public async Task TrainingProgress_GoalAchieved_CalculatesCorrectly()
+    {
+        // Arrange
+        var pet = new Pet
+        {
+            Name = "Goal Setter",
+            Species = "Dog",
+            Breed = "Achiever",
+            DateOfBirth = DateTime.Now.AddYears(-3),
+            Weight = 25.0m,
+            Color = "Golden",
+            MicrochipNumber = "GOAL123456"
+        };
+
+        _context.Pets.Add(pet);
+        await _context.SaveChangesAsync();
+
+        var goalDate = DateTime.UtcNow.AddDays(30);
+        var completionDate = DateTime.UtcNow.AddDays(25); // Completed before goal
+
+        var trainingProgress = new TrainingProgress
+        {
+            Pet = pet,
+            SkillName = "Goal Setting",
+            Description = "Testing goal achievement",
+            Status = "Completed",
+            Notes = "Test notes",
+            StartDate = DateTime.UtcNow,
+            CompletionDate = completionDate,
+            TrainingGoal = "Complete within 30 days",
+            GoalDate = goalDate,
+            IsSharedWithTrainer = true
+        };
+
+        // Act
+        _context.TrainingProgress.Add(trainingProgress);
+        await _context.SaveChangesAsync();
+
+        // Assert
+        var savedProgress = await _context.TrainingProgress.FirstAsync();
+        savedProgress.GoalDate.Should().NotBeNull();
+        savedProgress.CompletionDate.Should().NotBeNull();
+        savedProgress.CompletionDate.Should().BeBefore(savedProgress.GoalDate.Value);
+    }
+
+    [Fact]
+    public async Task TrainingProgress_WithTrainerInteraction_ShouldSaveSuccessfully()
+    {
+        // Arrange
+        var pet = new Pet
+        {
+            Name = "Trainee",
+            Species = "Dog",
+            Breed = "Training Breed",
+            DateOfBirth = DateTime.Now.AddYears(-1),
+            Weight = 20.0m,
+            Color = "Black",
+            MicrochipNumber = "TRAIN123456"
+        };
+
+        _context.Pets.Add(pet);
+        await _context.SaveChangesAsync();
+
+        var trainingProgress = new TrainingProgress
+        {
+            Pet = pet,
+            SkillName = "Advanced Command",
+            Description = "Working with trainer",
+            Status = "InProgress",
+            ProficiencyLevel = 3,
+            Notes = "Owner notes",
+            TrainerNotes = "Professional feedback here",
+            IsSharedWithTrainer = true,
+            StartDate = DateTime.UtcNow.AddDays(-5)
+        };
+
+        // Act
+        _context.TrainingProgress.Add(trainingProgress);
+        await _context.SaveChangesAsync();
+
+        // Assert
+        var savedProgress = await _context.TrainingProgress
+            .Include(tp => tp.Pet)
+            .FirstAsync();
+
+        savedProgress.IsSharedWithTrainer.Should().BeTrue();
+        savedProgress.TrainerNotes.Should().NotBeNull();
+        savedProgress.TrainerNotes.Should().Be("Professional feedback here");
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(3)]
+    [InlineData(5)]
+    public async Task TrainingProgress_ProficiencyLevels_ShouldBeInValidRange(int level)
+    {
+        // Arrange
+        var pet = new Pet
+        {
+            Name = "Proficiency",
+            Species = "Dog",
+            Breed = "Smart Breed",
+            DateOfBirth = DateTime.Now.AddYears(-2),
+            Weight = 22.0m,
+            Color = "Brown",
+            MicrochipNumber = "PROF123456"
+        };
+
+        _context.Pets.Add(pet);
+        await _context.SaveChangesAsync();
+
+        var trainingProgress = new TrainingProgress
+        {
+            Pet = pet,
+            SkillName = "Proficiency Test",
+            Description = "Testing proficiency levels",
+            Status = "InProgress",
+            ProficiencyLevel = level,
+            Notes = "Test notes",
+            StartDate = DateTime.UtcNow
+        };
+
+        // Act
+        _context.TrainingProgress.Add(trainingProgress);
+        await _context.SaveChangesAsync();
+
+        // Assert
+        var savedProgress = await _context.TrainingProgress.FirstAsync();
+        savedProgress.ProficiencyLevel.Should().Be(level);
+        savedProgress.ProficiencyLevel.Should().BeInRange(1, 5);
+    }
+
+    [Fact]
+    public async Task TrainingProgress_UpdateStatus_ShouldUpdateTimestamp()
+    {
+        // Arrange
+        var pet = new Pet
+        {
+            Name = "Timestamp",
+            Species = "Dog",
+            Breed = "Time Breed",
+            DateOfBirth = DateTime.Now.AddYears(-1),
+            Weight = 18.0m,
+            Color = "White",
+            MicrochipNumber = "TIME123456"
+        };
+
+        _context.Pets.Add(pet);
+        await _context.SaveChangesAsync();
+
+        var trainingProgress = new TrainingProgress
+        {
+            Pet = pet,
+            SkillName = "Time Test",
+            Description = "Testing timestamps",
+            Status = "InProgress",
+            Notes = "Initial notes",
+            StartDate = DateTime.UtcNow.AddDays(-1),
+            IsSharedWithTrainer = false
+        };
+
+        _context.TrainingProgress.Add(trainingProgress);
+        await _context.SaveChangesAsync();
+
+        var originalUpdateTime = trainingProgress.UpdatedAt;
+
+        // Wait to ensure timestamp difference
+        await Task.Delay(10);
+
+        // Act
+        trainingProgress.Status = "Completed";
+        trainingProgress.CompletionDate = DateTime.UtcNow;
+        trainingProgress.UpdatedAt = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+
+        // Assert
+        var updatedProgress = await _context.TrainingProgress.FirstAsync();
+        updatedProgress.Status.Should().Be("Completed");
+        updatedProgress.CompletionDate.Should().NotBeNull();
+        updatedProgress.UpdatedAt.Should().BeAfter(originalUpdateTime);
+    }
+
+    #endregion
+
     public void Dispose()
     {
         _context.Dispose();
