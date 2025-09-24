@@ -16,6 +16,7 @@ public class RegistrationDto
     public string LastName { get; set; }
     public AddressDto Address { get; set; } = new AddressDto();
     public string Phone { get; set; }
+    public string PreferredContactMethod { get; set; }
 }
 
 public class LoginDto

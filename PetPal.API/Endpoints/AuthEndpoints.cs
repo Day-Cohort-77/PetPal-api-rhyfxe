@@ -114,6 +114,7 @@ public static class AuthEndpoints
                             ZipCode = "90210"
                         },
                         Phone = "Admin Phone",
+                        PreferredContactMethod = "Email",
                         IdentityUserId = identityUser.Id,
                         CreatedAt = DateTime.UtcNow,
                         UpdatedAt = DateTime.UtcNow
@@ -190,6 +191,7 @@ public static class AuthEndpoints
                             ZipCode = "90210"
                         },
                         Phone = "Admin Phone",
+                        PreferredContactMethod = "Email",
                         IdentityUserId = identityUser.Id,
                         CreatedAt = DateTime.UtcNow,
                         UpdatedAt = DateTime.UtcNow
