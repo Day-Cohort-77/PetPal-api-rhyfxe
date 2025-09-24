@@ -81,7 +81,13 @@ public static class DbInitializer
                     FirstName = "Admin",
                     LastName = "User",
                     Email = adminEmail,
-                    Address = "123 Admin St",
+                    Address = new Address
+                    {
+                        Street = "123 Admin St",
+                        City = "Admin City",
+                        State = "CA",
+                        ZipCode = "90210"
+                    },
                     Phone = "555-123-4567",
                     IdentityUserId = adminUser.Id,
                     CreatedAt = DateTime.UtcNow,
@@ -116,7 +122,13 @@ public static class DbInitializer
                     FirstName = "Admin",
                     LastName = "User",
                     Email = adminEmail,
-                    Address = "123 Admin St",
+                    Address = new Address
+                    {
+                        Street = "123 Admin St",
+                        City = "Admin City",
+                        State = "CA",
+                        ZipCode = "90210"
+                    },
                     Phone = "555-123-4567",
                     IdentityUserId = adminUser.Id,
                     CreatedAt = DateTime.UtcNow,
@@ -244,7 +256,13 @@ public static class DbInitializer
                     FirstName = "Sample",
                     LastName = "User",
                     Email = userEmail1,
-                    Address = "456 User Ave",
+                    Address = new Address
+                    {
+                        Street = "456 User Ave",
+                        City = "Sample City",
+                        State = "NY",
+                        ZipCode = "10001"
+                    },
                     Phone = "555-987-6543",
                     IdentityUserId = sampleUser1.Id,
                     CreatedAt = DateTime.UtcNow,
@@ -289,7 +307,13 @@ public static class DbInitializer
                     FirstName = "Jane",
                     LastName = "Doe",
                     Email = userEmail2,
-                    Address = "789 Maple St",
+                    Address = new Address
+                    {
+                        Street = "789 Maple St",
+                        City = "Maple City",
+                        State = "FL",
+                        ZipCode = "33101"
+                    },
                     Phone = "555-123-7890",
                     IdentityUserId = sampleUser2.Id,
                     CreatedAt = DateTime.UtcNow,
@@ -387,7 +411,7 @@ public static class DbInitializer
                     Weight = 0.2m,
                     Color = "Yellow",
                     ImageUrl = "https://example.com/tweety.jpg",
-                    MicrochipNumber = null
+                    MicrochipNumber = ""
                 }
             };
 

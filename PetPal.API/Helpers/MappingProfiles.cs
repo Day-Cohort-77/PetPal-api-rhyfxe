@@ -9,9 +9,14 @@ public class MappingProfiles : Profile
 {
     public MappingProfiles()
     {
+        // Address mappings
+        CreateMap<Address, AddressDto>();
+        CreateMap<AddressDto, Address>();
+
         // User Profile mappings
         CreateMap<UserProfile, UserProfileDto>();
         CreateMap<RegistrationDto, UserProfile>();
+        CreateMap<UpdateUserProfileDto, UserProfile>();
 
         // Pet mappings
         CreateMap<Pet, PetDto>();
