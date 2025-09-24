@@ -11,10 +11,14 @@ public class UserProfile
     public string Email { get; set; } = string.Empty;
     public Address Address { get; set; } = new Address();
     public string? Phone { get; set; }
-    public string PreferredContactMethod { get; set; }
+    public string PreferredContactMethod { get; set; } = string.Empty;
     public string IdentityUserId { get; set; } = string.Empty;
     public IdentityUser IdentityUser { get; set; } = null!;
     public List<PetOwner> OwnedPets { get; set; } = new List<PetOwner>();
+
+    // Theme preferences (optional - user may not have set any)
+    public ThemePreferences? ThemePreferences { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 }
