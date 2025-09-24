@@ -770,7 +770,7 @@ public class ComprehensiveModelTests : IDisposable
                 ZipCode = "12345"
             },
             Phone = "+1-555-0123",
-            PreferredContactMethod = "email",
+            PreferredContactMethod = "Email",
             IdentityUserId = identityUser.Id
         };
 
@@ -789,7 +789,7 @@ public class ComprehensiveModelTests : IDisposable
         savedProfile.Address.State.Should().Be("AT");
         savedProfile.Address.ZipCode.Should().Be("12345");
         savedProfile.Phone.Should().Be("+1-555-0123");
-        savedProfile.PreferredContactMethod.Should().Be("email");
+        savedProfile.PreferredContactMethod.Should().Be("Email");
         savedProfile.IdentityUserId.Should().Be("user123");
         savedProfile.Id.Should().BeGreaterThan(0);
         savedProfile.CreatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(1));
@@ -813,7 +813,7 @@ public class ComprehensiveModelTests : IDisposable
                 ZipCode = "62701"
             },
             Phone = "555-0456",
-            PreferredContactMethod = "phone",
+            PreferredContactMethod = "Phone",
             IdentityUserId = "user456"
         };
 
@@ -829,7 +829,7 @@ public class ComprehensiveModelTests : IDisposable
         savedProfile.OwnedPets.Should().NotBeNull();
         savedProfile.OwnedPets.Should().BeEmpty();
         savedProfile.Address.Street.Should().Be("456 Oak Avenue");
-        savedProfile.PreferredContactMethod.Should().Be("phone");
+        savedProfile.PreferredContactMethod.Should().Be("Phone");
     }
 
     [Theory]
@@ -853,7 +853,7 @@ public class ComprehensiveModelTests : IDisposable
                 ZipCode = "12345"
             },
             Phone = "555-TEST",
-            PreferredContactMethod = "email",
+            PreferredContactMethod = "Email",
             IdentityUserId = Guid.NewGuid().ToString()
         };
 
@@ -880,7 +880,7 @@ public class ComprehensiveModelTests : IDisposable
             Email = "empty@address.com",
             Address = new Address(), // Empty address - all fields will be empty strings
             Phone = "555-EMPTY",
-            PreferredContactMethod = "email",
+            PreferredContactMethod = "Email",
             IdentityUserId = "emptyaddress123"
         };
 
@@ -1025,6 +1025,7 @@ public class ComprehensiveModelTests : IDisposable
                 ZipCode = "12345"
             },
             Phone = "555-OWNER",
+            PreferredContactMethod = "Email",
             IdentityUserId = "owner123"
         };
 
@@ -1082,6 +1083,7 @@ public class ComprehensiveModelTests : IDisposable
                 ZipCode = "54321"
             },
             Phone = "555-PRIMARY",
+            PreferredContactMethod = "Phone",
             IdentityUserId = "primary123"
         };
 
@@ -1133,6 +1135,7 @@ public class ComprehensiveModelTests : IDisposable
                 ZipCode = "98765"
             },
             Phone = "555-NAV",
+            PreferredContactMethod = "SMS",
             IdentityUserId = "nav123"
         };
 
@@ -1203,6 +1206,7 @@ public class ComprehensiveModelTests : IDisposable
                 ZipCode = "11111"
             },
             Phone = "555-FULLOWN",
+            PreferredContactMethod = "SMS",
             IdentityUserId = "fullowner123"
         };
 
@@ -1307,6 +1311,7 @@ public class ComprehensiveModelTests : IDisposable
                 ZipCode = "22222"
             },
             Phone = "555-PRIMARY",
+            PreferredContactMethod = "Email",
             IdentityUserId = "primary123"
         };
 
@@ -1323,6 +1328,7 @@ public class ComprehensiveModelTests : IDisposable
                 ZipCode = "33333"
             },
             Phone = "555-SECOND",
+            PreferredContactMethod = "Phone",
             IdentityUserId = "secondary123"
         };
 
