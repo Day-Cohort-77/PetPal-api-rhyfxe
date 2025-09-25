@@ -33,7 +33,7 @@ public class TrainingProgressCreateDto
 {
     public string SkillName { get; set; }
     public string Description { get; set; }
-    public string Status { get; set; }  // "NotStarted", "InProgress", "Completed", "NeedsReview"
+    public string Status { get; set; }  // "NotStarted", "InProgress", "Completed", "NeedsWork"
     public int? ProficiencyLevel { get; set; }  // 1-5 scale
     public int? Duration { get; set; }
     public string? DurationType { get; set; }
