@@ -136,6 +136,9 @@ if (app.Environment.IsDevelopment())
 // Use CORS middleware BEFORE authentication
 app.UseCors("AllowLocalhost");
 
+// Enable static file serving for uploads
+app.UseStaticFiles();
+
 // Add authentication middleware
 app.UseAuthentication();
 app.UseAuthorization();
@@ -149,6 +152,7 @@ app.MapPetEndpoints();
 app.MapHealthRecordEndpoints();
 app.MapTrainingProgressEndpoints();
 app.MapSettingsEndpoints();
+app.MapFileUploadEndpoints();
 // TODO: Map other endpoints
 app.MapAppointmentEndpoints();
 // app.MapMedicationEndpoints();
