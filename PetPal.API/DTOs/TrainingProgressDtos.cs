@@ -10,6 +10,8 @@ public class TrainingProgressDto
     public string Description { get; set; }
     public string Status { get; set; }
     public int? ProficiencyLevel { get; set; }
+    public int? Duration { get; set; }
+    public string? DurationType { get; set; }
     public DateTime StartDate { get; set; }
     public DateTime? CompletionDate { get; set; }
     public string Notes { get; set; }
@@ -33,6 +35,8 @@ public class TrainingProgressCreateDto
     public string Description { get; set; }
     public string Status { get; set; }  // "NotStarted", "InProgress", "Completed", "NeedsReview"
     public int? ProficiencyLevel { get; set; }  // 1-5 scale
+    public int? Duration { get; set; }
+    public string? DurationType { get; set; }
     public DateTime StartDate { get; set; }
     public DateTime? CompletionDate { get; set; }
     public string Notes { get; set; }
@@ -49,6 +53,8 @@ public class TrainingProgressUpdateDto
     public string Description { get; set; }
     public string Status { get; set; }
     public int? ProficiencyLevel { get; set; }
+    public int? Duration { get; set; }
+    public string? DurationType { get; set; }
     public DateTime StartDate { get; set; }
     public DateTime? CompletionDate { get; set; }
     public string Notes { get; set; }

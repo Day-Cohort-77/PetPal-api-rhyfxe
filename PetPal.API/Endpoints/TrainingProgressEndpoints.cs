@@ -329,6 +329,103 @@ public static class TrainingProgressEndpoints
             return Results.Ok(progressData);
         }).RequireAuthorization();
 
+        // GET: Get detailed progress data for charts
+        app.MapGet("/pets/{petId}/training-progress/charts", async (
+            int petId,
+            [FromQuery] string? skillName,
+            [FromQuery] DateTime? startDate,
+            [FromQuery] DateTime? endDate,
+            ClaimsPrincipal user,
+            PetPalDbContext db) =>
+        {
+            var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null) return Results.Unauthorized();
+
+            var userProfile = await db.UserProfiles
+                .FirstOrDefaultAsync(up => up.IdentityUserId == userId);
+            if (userProfile == null) return Results.NotFound("User profile not found.");
+
+            var pet = await db.Pets
+                .Include(p => p.Owners)
+                .FirstOrDefaultAsync(p => p.Id == petId);
+            if (pet == null) return Results.NotFound("Pet not found.");
+
+            var isAdmin = user.IsInRole("Admin");
+            var isPetOwner = pet.Owners.Any(po => po.UserProfileId == userProfile.Id);
+            if (!isAdmin && !isPetOwner) return Results.Forbid();
+
+            var query = db.TrainingProgress
+                .Where(tp => tp.PetId == petId);
+
+            if (!string.IsNullOrEmpty(skillName))
+                query = query.Where(tp => tp.SkillName == skillName);
+            if (startDate.HasValue)
+                query = query.Where(tp => tp.StartDate >= startDate.Value);
+            if (endDate.HasValue)
+                query = query.Where(tp => tp.StartDate <= endDate.Value);
+
+            var sessions = await query
+                .OrderBy(tp => tp.StartDate)
+                .Select(tp => new
+                {
+                    tp.Id,
+                    tp.SkillName,
+                    tp.StartDate,
+                    tp.ProficiencyLevel,
+                    tp.Duration,
+                    tp.DurationType,
+                    tp.Status,
+                    tp.TrainingGoal,
+                    tp.GoalDate
+                })
+                .ToListAsync();
+
+            // Group by date for timeline charts
+            var dailyProgress = sessions
+                .GroupBy(s => s.StartDate.Date)
+                .Select(g => new
+                {
+                    Date = g.Key,
+                    SessionCount = g.Count(),
+                    AverageProficiency = g.Where(s => s.ProficiencyLevel.HasValue)
+                                        .Average(s => s.ProficiencyLevel ?? 0),
+                    TotalDuration = g.Where(s => s.Duration.HasValue && s.DurationType == "Minutes")
+                                   .Sum(s => s.Duration ?? 0),
+                    CompletedSessions = g.Count(s => s.Status == "Completed")
+                })
+                .OrderBy(d => d.Date)
+                .ToList();
+
+            // Calculate trends
+            var proficiencyTrend = sessions
+                .Where(s => s.ProficiencyLevel.HasValue)
+                .OrderBy(s => s.StartDate)
+                .Select(s => new { Date = s.StartDate.Date, Proficiency = s.ProficiencyLevel!.Value })
+                .ToList();
+
+            var durationTrend = sessions
+                .Where(s => s.Duration.HasValue)
+                .OrderBy(s => s.StartDate)
+                .Select(s => new { 
+                    Date = s.StartDate.Date, 
+                    Duration = s.Duration!.Value,
+                    DurationType = s.DurationType ?? "Minutes"
+                })
+                .ToList();
+
+            return Results.Ok(new
+            {
+                Sessions = sessions,
+                DailyProgress = dailyProgress,
+                ProficiencyTrend = proficiencyTrend,
+                DurationTrend = durationTrend,
+                TotalSessions = sessions.Count,
+                CompletedSessions = sessions.Count(s => s.Status == "Completed"),
+                SuccessRate = sessions.Count > 0 ? 
+                    Math.Round((double)sessions.Count(s => s.Status == "Completed") / sessions.Count * 100, 1) : 0
+            });
+        }).RequireAuthorization();
+
         // GET: Get filtered training records
         app.MapGet("/pets/{petId}/training-progress/filter", async (
             int petId,

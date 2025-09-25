@@ -11,6 +11,8 @@ public class TrainingProgress
     public required string Description { get; set; }
     public required string Status { get; set; } // "NotStarted", "InProgress", "Completed", "NeedsReview"
     public int? ProficiencyLevel { get; set; } // 1-5 scale
+    public int? Duration { get; set; } // Duration value (e.g., 30, 15, 5)
+    public string? DurationType { get; set; } // "Minutes" or "Repetitions"
     public required DateTime StartDate { get; set; }
     public DateTime? CompletionDate { get; set; }
     public required string Notes { get; set; }

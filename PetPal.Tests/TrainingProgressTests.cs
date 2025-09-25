@@ -49,6 +49,8 @@ public class TrainingProgressTests : IDisposable
             Description = "Basic obedience command - sit",
             Status = "InProgress",
             ProficiencyLevel = 3,
+            Duration = 15,
+            DurationType = "Minutes",
             StartDate = new DateTime(2024, 9, 15),
             CompletionDate = null,
             Notes = "Showing good progress",
@@ -69,6 +71,8 @@ public class TrainingProgressTests : IDisposable
         savedProgress.Description.Should().Be("Basic obedience command - sit");
         savedProgress.Status.Should().Be("InProgress");
         savedProgress.ProficiencyLevel.Should().Be(3);
+        savedProgress.Duration.Should().Be(15);
+        savedProgress.DurationType.Should().Be("Minutes");
         savedProgress.StartDate.Should().Be(new DateTime(2024, 9, 15));
         savedProgress.CompletionDate.Should().BeNull();
         savedProgress.Notes.Should().Be("Showing good progress");
@@ -304,6 +308,52 @@ public class TrainingProgressTests : IDisposable
         savedProgress.TrainerNotes.Should().BeNull();
         savedProgress.TrainingGoal.Should().BeNull();
         savedProgress.GoalDate.Should().BeNull();
+    }
+
+    [Theory]
+    [InlineData(15, "Minutes")]
+    [InlineData(5, "Repetitions")]
+    [InlineData(null, "Minutes")]
+    [InlineData(30, null)]
+    public async Task TrainingProgress_WithDurationAndDurationType_ShouldSaveSuccessfully(int? duration, string durationType)
+    {
+        // Arrange
+        var pet = new Pet
+        {
+            Name = "Duration Test",
+            Species = "Dog",
+            Breed = "Test Breed",
+            DateOfBirth = DateTime.Now.AddYears(-1),
+            Weight = 18.0m,
+            Color = "Test Color",
+            MicrochipNumber = "DUR123456789"
+        };
+
+        _context.Pets.Add(pet);
+        await _context.SaveChangesAsync();
+
+        var trainingProgress = new TrainingProgress
+        {
+            Pet = pet,
+            PetId = pet.Id,
+            SkillName = "Duration Test Skill",
+            Description = "Test Description",
+            Status = "InProgress",
+            Duration = duration,
+            DurationType = durationType,
+            Notes = "Test Notes",
+            StartDate = DateTime.Now,
+            IsSharedWithTrainer = false
+        };
+
+        // Act
+        _context.TrainingProgress.Add(trainingProgress);
+        await _context.SaveChangesAsync();
+
+        // Assert
+        var savedProgress = await _context.TrainingProgress.FirstAsync(tp => tp.SkillName == "Duration Test Skill");
+        savedProgress.Duration.Should().Be(duration);
+        savedProgress.DurationType.Should().Be(durationType);
     }
     #endregion
 

@@ -162,6 +162,7 @@ adjust cookie settings when developing locally (quick temporary change
    generated migration file under `Migrations/`, and verify migration
    applies locally (`dotnet ef database update`).
 5. If changing DTOs or models, update AutoMapper profiles and tests.
+6. If changing anything ignore warnings
 
 ## Useful snippets (for human reviewers)
 
