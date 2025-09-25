@@ -149,9 +149,8 @@ app.MapPetEndpoints();
 app.MapHealthRecordEndpoints();
 app.MapTrainingProgressEndpoints();
 app.MapSettingsEndpoints();
-// TODO: Map other endpoints
 app.MapAppointmentEndpoints();
-// app.MapMedicationEndpoints();
+app.MapMedicationEndpoints(); 
 // app.MapVeterinarianEndpoints();
 
 app.Run();
