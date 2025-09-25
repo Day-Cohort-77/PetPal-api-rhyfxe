@@ -144,32 +144,47 @@ public static class DbInitializer
 
     private static async Task SeedSampleData(PetPalDbContext context, UserManager<IdentityUser> userManager)
     {
-        // Only seed sample data if the database is empty
-        if (await context.Pets.AnyAsync() || await context.Veterinarians.AnyAsync())
+        // Check if we need to seed basic entities
+        bool needsBasicSeeding = !await context.Pets.AnyAsync() || !await context.Veterinarians.AnyAsync();
+        
+        List<Veterinarian> veterinarians;
+        List<UserProfile> userProfiles;
+        List<Pet> pets;
+
+        if (needsBasicSeeding)
         {
-            return;
+            // Seed veterinarians
+            veterinarians = await SeedSampleVeterinarians(context);
+
+            // Seed sample users and get their profiles
+            userProfiles = await SeedSampleUsers(context, userManager);
+
+            // Seed pets and get the created pets
+            pets = await SeedSamplePets(context, userProfiles);
+
+            // Seed pet owners (relationships between pets and users)
+            await SeedSamplePetOwners(context, pets, userProfiles);
+
+            // Seed health records
+            await SeedSampleHealthRecords(context, pets, veterinarians);
+
+            // Seed appointments
+            await SeedSampleAppointments(context, pets, veterinarians);
+        }
+        else
+        {
+            // Get existing data for medication seeding
+            veterinarians = await context.Veterinarians.ToListAsync();
+            pets = await context.Pets.ToListAsync();
         }
 
-        // Seed veterinarians
-        var veterinarians = await SeedSampleVeterinarians(context);
-
-        // Seed sample users and get their profiles
-        var userProfiles = await SeedSampleUsers(context, userManager);
-
-        // Seed pets and get the created pets
-        var pets = await SeedSamplePets(context, userProfiles);
-
-        // Seed pet owners (relationships between pets and users)
-        await SeedSamplePetOwners(context, pets, userProfiles);
-
-        // Seed health records
-        await SeedSampleHealthRecords(context, pets, veterinarians);
-
-        // Seed appointments
-        await SeedSampleAppointments(context, pets, veterinarians);
-
-        // Seed medications
-        await SeedSampleMedications(context, pets, veterinarians);
+        // Always check and seed medications if they don't exist
+        var hasMedications = await context.Medications.AnyAsync();
+        if (!hasMedications)
+        {
+            // Seed medications
+            await SeedSampleMedications(context, pets, veterinarians);
+        }
     }
 
     private static async Task<List<Veterinarian>> SeedSampleVeterinarians(PetPalDbContext context)

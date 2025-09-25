@@ -16,35 +16,44 @@ public static class MedicationEndpoints
             .RequireAuthorization();
 
         // GET /medications/pet/{petId} - Get all medications for a specific pet
+        // Any authenticated user can view medications for their own pets
         medicationGroup.MapGet("/pet/{petId:int}", GetMedicationsForPet)
             .WithName("GetMedicationsForPet")
             .WithSummary("Get all medications for a specific pet")
-            .WithDescription("Retrieves all medications for a pet with filtering and sorting options")
+            .WithDescription("Retrieves all medications for a pet with filtering and sorting options. Pet owners can view their pets' medications.")
             .Produces<List<MedicationDto>>(200)
             .Produces(404)
             .Produces(403);
 
         // GET /medications/{id} - Get a specific medication by ID
+        // Any authenticated user can view medications for their own pets
         medicationGroup.MapGet("/{id:int}", GetMedicationById)
             .WithName("GetMedicationById")
             .WithSummary("Get a medication by ID")
+            .WithDescription("Pet owners can view medications for their pets.")
             .Produces<MedicationDto>(200)
             .Produces(404)
             .Produces(403);
 
         // POST /medications - Create a new medication
+        // Only Admin or Veterinarian roles can create medications
         medicationGroup.MapPost("/", CreateMedication)
             .WithName("CreateMedication")
             .WithSummary("Create a new medication")
+            .WithDescription("Only Admin or Veterinarian roles can create medications.")
+            .RequireAuthorization("VetAccess") // This policy requires Admin or Veterinarian role
             .Accepts<MedicationCreateDto>("application/json")
             .Produces<MedicationDto>(201)
             .Produces(400)
             .Produces(403);
 
         // PUT /medications/{id} - Update an existing medication
+        // Only Admin or Veterinarian roles can update medications
         medicationGroup.MapPut("/{id:int}", UpdateMedication)
             .WithName("UpdateMedication")
             .WithSummary("Update an existing medication")
+            .WithDescription("Only Admin or Veterinarian roles can update medications.")
+            .RequireAuthorization("VetAccess") // This policy requires Admin or Veterinarian role
             .Accepts<MedicationUpdateDto>("application/json")
             .Produces<MedicationDto>(200)
             .Produces(400)
@@ -52,9 +61,12 @@ public static class MedicationEndpoints
             .Produces(403);
 
         // DELETE /medications/{id} - Delete a medication
+        // Only Admin or Veterinarian roles can delete medications
         medicationGroup.MapDelete("/{id:int}", DeleteMedication)
             .WithName("DeleteMedication")
             .WithSummary("Delete a medication")
+            .WithDescription("Only Admin or Veterinarian roles can delete medications.")
+            .RequireAuthorization("VetAccess") // This policy requires Admin or Veterinarian role
             .Produces(204)
             .Produces(404)
             .Produces(403);
