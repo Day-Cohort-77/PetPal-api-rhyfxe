@@ -54,5 +54,10 @@ public class MappingProfiles : Profile
         CreateMap<Veterinarian, VeterinarianDto>();
         CreateMap<VeterinarianCreateDto, Veterinarian>();
         CreateMap<VeterinarianUpdateDto, Veterinarian>();
+
+        // Theme Preferences mappings
+        CreateMap<ThemePreferences, ThemePreferencesDto>()
+            .ForMember(dest => dest.UserId, opt => opt.MapFrom(src => src.UserProfile!.IdentityUserId));
+        CreateMap<UpdateThemePreferencesDto, ThemePreferences>();
     }
 }
