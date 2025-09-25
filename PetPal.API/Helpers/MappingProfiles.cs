@@ -54,5 +54,11 @@ public class MappingProfiles : Profile
         CreateMap<Veterinarian, VeterinarianDto>();
         CreateMap<VeterinarianCreateDto, Veterinarian>();
         CreateMap<VeterinarianUpdateDto, Veterinarian>();
+
+        // Training Progress mappings
+        CreateMap<TrainingProgress, TrainingProgressDto>()
+            .ForMember(dest => dest.PetName, opt => opt.MapFrom(src => src.Pet.Name));
+        CreateMap<TrainingProgressCreateDto, TrainingProgress>();
+        CreateMap<TrainingProgressUpdateDto, TrainingProgress>();
     }
 }
