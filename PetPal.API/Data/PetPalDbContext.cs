@@ -18,6 +18,7 @@ public class PetPalDbContext : IdentityDbContext<IdentityUser>
     public DbSet<Medication> Medications { get; set; }
     public DbSet<Veterinarian> Veterinarians { get; set; }
     public DbSet<TrainingProgress> TrainingProgress { get; set; }
+    public DbSet<ThemePreferences> ThemePreferences { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -106,6 +107,18 @@ public class PetPalDbContext : IdentityDbContext<IdentityUser>
                 address.Property(a => a.State).HasColumnName("State");
                 address.Property(a => a.ZipCode).HasColumnName("ZipCode");
             });
+
+        // Configure ThemePreferences relationship (one-to-one, optional)
+        modelBuilder.Entity<ThemePreferences>()
+            .HasOne(tp => tp.UserProfile)
+            .WithOne(up => up.ThemePreferences)
+            .HasForeignKey<ThemePreferences>(tp => tp.UserProfileId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // Ensure one theme preference per user
+        modelBuilder.Entity<ThemePreferences>()
+            .HasIndex(tp => tp.UserProfileId)
+            .IsUnique();
 
     }
 }

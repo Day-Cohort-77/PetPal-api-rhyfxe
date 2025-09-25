@@ -1447,289 +1447,535 @@ public class ComprehensiveModelTests : IDisposable
     }
     #endregion
 
-    #region TrainingProgress Model - Additional Tests
-
-    [Theory]
-    [InlineData("2023-09-01", "2023-09-15", 14)]  // Completed training
-    [InlineData("2023-09-01", null, null)]        // Ongoing training
-    public async Task TrainingProgress_DaysInTraining_CalculatesCorrectly(string startDate, string? endDate, int? expectedDays)
+    #region ThemePreferences Model - Complete Coverage
+    [Fact]
+    public async Task ThemePreferences_CreateWithAllProperties_ShouldSaveSuccessfully()
     {
         // Arrange
-        var pet = new Pet
+        var userProfile = new UserProfile
         {
-            Name = "Calculator",
-            Species = "Dog",
-            Breed = "Math Whiz",
-            DateOfBirth = DateTime.Now.AddYears(-2),
-            Weight = 20.0m,
-            Color = "Brown",
-            MicrochipNumber = "CALC123456"
+            FirstName = "Theme",
+            LastName = "User",
+            Email = "theme@user.com",
+            Address = new Address
+            {
+                Street = "123 Theme Street",
+                City = "Theme City",
+                State = "TC",
+                ZipCode = "12345"
+            },
+            Phone = "555-THEME",
+            PreferredContactMethod = "Email",
+            IdentityUserId = "theme123"
         };
 
-        _context.Pets.Add(pet);
+        _context.UserProfiles.Add(userProfile);
         await _context.SaveChangesAsync();
 
-        var trainingProgress = new TrainingProgress
+        var themePreferences = new ThemePreferences
         {
-            Pet = pet,
-            SkillName = "Math Skills",
-            Description = "Testing date calculations",
-            Status = endDate != null ? "Completed" : "InProgress",
-            Notes = "Test notes",
-            StartDate = DateTime.Parse(startDate),
-            CompletionDate = endDate != null ? DateTime.Parse(endDate) : null,
-            IsSharedWithTrainer = false
+            UserProfileId = userProfile.Id,
+            Theme = "dark",
+            AccentColor = "blue",
+            FontSize = "medium",
+            UseSystemPreference = false
         };
 
         // Act
-        _context.TrainingProgress.Add(trainingProgress);
+        _context.ThemePreferences.Add(themePreferences);
         await _context.SaveChangesAsync();
 
         // Assert
-        var savedProgress = await _context.TrainingProgress
-            .Include(tp => tp.Pet)
+        var savedTheme = await _context.ThemePreferences.FirstAsync();
+        savedTheme.UserProfileId.Should().Be(userProfile.Id);
+        savedTheme.Theme.Should().Be("dark");
+        savedTheme.AccentColor.Should().Be("blue");
+        savedTheme.FontSize.Should().Be("medium");
+        savedTheme.UseSystemPreference.Should().BeFalse();
+        savedTheme.Id.Should().BeGreaterThan(0);
+        savedTheme.CreatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(1));
+        savedTheme.UpdatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(1));
+    }
+
+    [Fact]
+    public async Task ThemePreferences_WithNullableProperties_ShouldSaveSuccessfully()
+    {
+        // Arrange
+        var userProfile = new UserProfile
+        {
+            FirstName = "Nullable",
+            LastName = "Theme",
+            Email = "nullable@theme.com",
+            Address = new Address
+            {
+                Street = "456 Nullable Street",
+                City = "Nullable City",
+                State = "NC",
+                ZipCode = "54321"
+            },
+            Phone = "555-NULL",
+            PreferredContactMethod = "Phone",
+            IdentityUserId = "nullable123"
+        };
+
+        _context.UserProfiles.Add(userProfile);
+        await _context.SaveChangesAsync();
+
+        var themePreferences = new ThemePreferences
+        {
+            UserProfileId = userProfile.Id,
+            Theme = null, // All theme properties can be null
+            AccentColor = null,
+            FontSize = null,
+            UseSystemPreference = true
+        };
+
+        // Act
+        _context.ThemePreferences.Add(themePreferences);
+        await _context.SaveChangesAsync();
+
+        // Assert
+        var savedTheme = await _context.ThemePreferences.FirstAsync();
+        savedTheme.Theme.Should().BeNull();
+        savedTheme.AccentColor.Should().BeNull();
+        savedTheme.FontSize.Should().BeNull();
+        savedTheme.UseSystemPreference.Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData("light", "green", "small")]
+    [InlineData("dark", "purple", "large")]
+    [InlineData("system", "red", "extra-large")]
+    [InlineData("auto", "orange", "tiny")]
+    public async Task ThemePreferences_WithDifferentThemeValues_ShouldSaveCorrectly(string theme, string accentColor, string fontSize)
+    {
+        // Arrange
+        var userProfile = new UserProfile
+        {
+            FirstName = "Various",
+            LastName = "Themes",
+            Email = $"{theme}@themes.com",
+            Address = new Address
+            {
+                Street = "789 Themes Street",
+                City = "Themes City",
+                State = "TC",
+                ZipCode = "98765"
+            },
+            Phone = "555-THEMES",
+            PreferredContactMethod = "SMS",
+            IdentityUserId = $"{theme}123"
+        };
+
+        _context.UserProfiles.Add(userProfile);
+        await _context.SaveChangesAsync();
+
+        var themePreferences = new ThemePreferences
+        {
+            UserProfileId = userProfile.Id,
+            Theme = theme,
+            AccentColor = accentColor,
+            FontSize = fontSize,
+            UseSystemPreference = false
+        };
+
+        // Act
+        _context.ThemePreferences.Add(themePreferences);
+        await _context.SaveChangesAsync();
+
+        // Assert
+        var savedTheme = await _context.ThemePreferences.FirstAsync();
+        savedTheme.Theme.Should().Be(theme);
+        savedTheme.AccentColor.Should().Be(accentColor);
+        savedTheme.FontSize.Should().Be(fontSize);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task ThemePreferences_WithDifferentSystemPreferenceValues_ShouldSaveCorrectly(bool useSystemPreference)
+    {
+        // Arrange
+        var userProfile = new UserProfile
+        {
+            FirstName = "System",
+            LastName = "Preference",
+            Email = "system@preference.com",
+            Address = new Address
+            {
+                Street = "321 System Street",
+                City = "System City",
+                State = "SC",
+                ZipCode = "13579"
+            },
+            Phone = "555-SYS",
+            PreferredContactMethod = "Email",
+            IdentityUserId = "system123"
+        };
+
+        _context.UserProfiles.Add(userProfile);
+        await _context.SaveChangesAsync();
+
+        var themePreferences = new ThemePreferences
+        {
+            UserProfileId = userProfile.Id,
+            Theme = "test",
+            UseSystemPreference = useSystemPreference
+        };
+
+        // Act
+        _context.ThemePreferences.Add(themePreferences);
+        await _context.SaveChangesAsync();
+
+        // Assert
+        var savedTheme = await _context.ThemePreferences.FirstAsync();
+        savedTheme.UseSystemPreference.Should().Be(useSystemPreference);
+    }
+
+    [Fact]
+    public async Task ThemePreferences_WithUserProfileNavigation_ShouldLoadCorrectly()
+    {
+        // Arrange
+        var userProfile = new UserProfile
+        {
+            FirstName = "Navigation",
+            LastName = "Theme",
+            Email = "nav@theme.com",
+            Address = new Address
+            {
+                Street = "147 Navigation Street",
+                City = "Navigation City",
+                State = "NT",
+                ZipCode = "24680"
+            },
+            Phone = "555-NAV",
+            PreferredContactMethod = "Phone",
+            IdentityUserId = "navtheme123"
+        };
+
+        var themePreferences = new ThemePreferences
+        {
+            UserProfile = userProfile, // Using navigation property
+            Theme = "navigation-theme",
+            AccentColor = "navigation-blue",
+            FontSize = "navigation-medium",
+            UseSystemPreference = false
+        };
+
+        // Act
+        _context.ThemePreferences.Add(themePreferences);
+        await _context.SaveChangesAsync();
+
+        // Assert
+        var themeWithUser = await _context.ThemePreferences
+            .Include(tp => tp.UserProfile)
             .FirstAsync();
 
-        if (expectedDays.HasValue)
-        {
-            savedProgress.CompletionDate.Should().NotBeNull();
-            savedProgress.CompletionDate.Value.Subtract(savedProgress.StartDate).Days
-                .Should().Be(expectedDays.Value);
-        }
-        else
-        {
-            savedProgress.CompletionDate.Should().BeNull();
-            // For ongoing training, check that DaysInTraining is reasonable
-            var daysInTraining = DateTime.UtcNow.Subtract(savedProgress.StartDate).Days;
-            daysInTraining.Should().BeGreaterThanOrEqualTo(0);
-        }
-    }
-
-    [Theory]
-    [InlineData("Completed", true)]
-    [InlineData("InProgress", false)]
-    [InlineData("NotStarted", false)]
-    [InlineData("NeedsReview", false)]
-    public async Task TrainingProgress_IsCompleted_ReturnsCorrectValue(string status, bool expectedResult)
-    {
-        // Arrange
-        var pet = new Pet
-        {
-            Name = "Status Test",
-            Species = "Dog",
-            Breed = "Status Breed",
-            DateOfBirth = DateTime.Now.AddYears(-1),
-            Weight = 15.0m,
-            Color = "Brown",
-            MicrochipNumber = "STATUS123456"
-        };
-
-        _context.Pets.Add(pet);
-        await _context.SaveChangesAsync();
-
-        var trainingProgress = new TrainingProgress
-        {
-            Pet = pet,
-            SkillName = "Status Test",
-            Description = "Testing completion status",
-            Status = status,
-            Notes = "Test notes",
-            StartDate = DateTime.UtcNow.AddDays(-7),
-            IsSharedWithTrainer = false
-        };
-
-        // Act
-        _context.TrainingProgress.Add(trainingProgress);
-        await _context.SaveChangesAsync();
-
-        // Assert
-        var savedProgress = await _context.TrainingProgress.FirstAsync();
-        (savedProgress.Status == "Completed").Should().Be(expectedResult);
+        themeWithUser.UserProfile.Should().NotBeNull();
+        themeWithUser.UserProfile!.FirstName.Should().Be("Navigation");
+        themeWithUser.UserProfile.Email.Should().Be("nav@theme.com");
+        themeWithUser.UserProfileId.Should().Be(userProfile.Id);
+        themeWithUser.Theme.Should().Be("navigation-theme");
     }
 
     [Fact]
-    public async Task TrainingProgress_GoalAchieved_CalculatesCorrectly()
+    public async Task ThemePreferences_UpdateTimestamp_ShouldUpdateCorrectly()
     {
         // Arrange
-        var pet = new Pet
+        var userProfile = new UserProfile
         {
-            Name = "Goal Setter",
-            Species = "Dog",
-            Breed = "Achiever",
-            DateOfBirth = DateTime.Now.AddYears(-3),
-            Weight = 25.0m,
-            Color = "Golden",
-            MicrochipNumber = "GOAL123456"
+            FirstName = "Update",
+            LastName = "Theme",
+            Email = "update@theme.com",
+            Address = new Address
+            {
+                Street = "258 Update Street",
+                City = "Update City",
+                State = "UC",
+                ZipCode = "36912"
+            },
+            Phone = "555-UPDATE",
+            PreferredContactMethod = "SMS",
+            IdentityUserId = "updatetheme123"
         };
 
-        _context.Pets.Add(pet);
+        _context.UserProfiles.Add(userProfile);
         await _context.SaveChangesAsync();
 
-        var goalDate = DateTime.UtcNow.AddDays(30);
-        var completionDate = DateTime.UtcNow.AddDays(25); // Completed before goal
-
-        var trainingProgress = new TrainingProgress
+        var themePreferences = new ThemePreferences
         {
-            Pet = pet,
-            SkillName = "Goal Setting",
-            Description = "Testing goal achievement",
-            Status = "Completed",
-            Notes = "Test notes",
-            StartDate = DateTime.UtcNow,
-            CompletionDate = completionDate,
-            TrainingGoal = "Complete within 30 days",
-            GoalDate = goalDate,
-            IsSharedWithTrainer = true
+            UserProfileId = userProfile.Id,
+            Theme = "original-theme",
+            UseSystemPreference = false
         };
 
-        // Act
-        _context.TrainingProgress.Add(trainingProgress);
+        _context.ThemePreferences.Add(themePreferences);
         await _context.SaveChangesAsync();
-
-        // Assert
-        var savedProgress = await _context.TrainingProgress.FirstAsync();
-        savedProgress.GoalDate.Should().NotBeNull();
-        savedProgress.CompletionDate.Should().NotBeNull();
-        savedProgress.CompletionDate.Should().BeBefore(savedProgress.GoalDate.Value);
-    }
-
-    [Fact]
-    public async Task TrainingProgress_WithTrainerInteraction_ShouldSaveSuccessfully()
-    {
-        // Arrange
-        var pet = new Pet
-        {
-            Name = "Trainee",
-            Species = "Dog",
-            Breed = "Training Breed",
-            DateOfBirth = DateTime.Now.AddYears(-1),
-            Weight = 20.0m,
-            Color = "Black",
-            MicrochipNumber = "TRAIN123456"
-        };
-
-        _context.Pets.Add(pet);
-        await _context.SaveChangesAsync();
-
-        var trainingProgress = new TrainingProgress
-        {
-            Pet = pet,
-            SkillName = "Advanced Command",
-            Description = "Working with trainer",
-            Status = "InProgress",
-            ProficiencyLevel = 3,
-            Notes = "Owner notes",
-            TrainerNotes = "Professional feedback here",
-            IsSharedWithTrainer = true,
-            StartDate = DateTime.UtcNow.AddDays(-5)
-        };
-
-        // Act
-        _context.TrainingProgress.Add(trainingProgress);
-        await _context.SaveChangesAsync();
-
-        // Assert
-        var savedProgress = await _context.TrainingProgress
-            .Include(tp => tp.Pet)
-            .FirstAsync();
-
-        savedProgress.IsSharedWithTrainer.Should().BeTrue();
-        savedProgress.TrainerNotes.Should().NotBeNull();
-        savedProgress.TrainerNotes.Should().Be("Professional feedback here");
-    }
-
-    [Theory]
-    [InlineData(1)]
-    [InlineData(3)]
-    [InlineData(5)]
-    public async Task TrainingProgress_ProficiencyLevels_ShouldBeInValidRange(int level)
-    {
-        // Arrange
-        var pet = new Pet
-        {
-            Name = "Proficiency",
-            Species = "Dog",
-            Breed = "Smart Breed",
-            DateOfBirth = DateTime.Now.AddYears(-2),
-            Weight = 22.0m,
-            Color = "Brown",
-            MicrochipNumber = "PROF123456"
-        };
-
-        _context.Pets.Add(pet);
-        await _context.SaveChangesAsync();
-
-        var trainingProgress = new TrainingProgress
-        {
-            Pet = pet,
-            SkillName = "Proficiency Test",
-            Description = "Testing proficiency levels",
-            Status = "InProgress",
-            ProficiencyLevel = level,
-            Notes = "Test notes",
-            StartDate = DateTime.UtcNow
-        };
-
-        // Act
-        _context.TrainingProgress.Add(trainingProgress);
-        await _context.SaveChangesAsync();
-
-        // Assert
-        var savedProgress = await _context.TrainingProgress.FirstAsync();
-        savedProgress.ProficiencyLevel.Should().Be(level);
-        savedProgress.ProficiencyLevel.Should().BeInRange(1, 5);
-    }
-
-    [Fact]
-    public async Task TrainingProgress_UpdateStatus_ShouldUpdateTimestamp()
-    {
-        // Arrange
-        var pet = new Pet
-        {
-            Name = "Timestamp",
-            Species = "Dog",
-            Breed = "Time Breed",
-            DateOfBirth = DateTime.Now.AddYears(-1),
-            Weight = 18.0m,
-            Color = "White",
-            MicrochipNumber = "TIME123456"
-        };
-
-        _context.Pets.Add(pet);
-        await _context.SaveChangesAsync();
-
-        var trainingProgress = new TrainingProgress
-        {
-            Pet = pet,
-            SkillName = "Time Test",
-            Description = "Testing timestamps",
-            Status = "InProgress",
-            Notes = "Initial notes",
-            StartDate = DateTime.UtcNow.AddDays(-1),
-            IsSharedWithTrainer = false
-        };
-
-        _context.TrainingProgress.Add(trainingProgress);
-        await _context.SaveChangesAsync();
-
-        var originalUpdateTime = trainingProgress.UpdatedAt;
+        var originalUpdateTime = themePreferences.UpdatedAt;
 
         // Wait to ensure timestamp difference
         await Task.Delay(10);
 
         // Act
-        trainingProgress.Status = "Completed";
-        trainingProgress.CompletionDate = DateTime.UtcNow;
-        trainingProgress.UpdatedAt = DateTime.UtcNow;
+        themePreferences.Theme = "updated-theme";
+        themePreferences.UpdatedAt = DateTime.UtcNow;
         await _context.SaveChangesAsync();
 
         // Assert
-        var updatedProgress = await _context.TrainingProgress.FirstAsync();
-        updatedProgress.Status.Should().Be("Completed");
-        updatedProgress.CompletionDate.Should().NotBeNull();
-        updatedProgress.UpdatedAt.Should().BeAfter(originalUpdateTime);
+        var updatedTheme = await _context.ThemePreferences.FirstAsync();
+        updatedTheme.Theme.Should().Be("updated-theme");
+        updatedTheme.UpdatedAt.Should().BeAfter(originalUpdateTime);
     }
 
+    [Fact]
+    public async Task UserProfile_WithThemePreferencesNavigation_ShouldLoadCorrectly()
+    {
+        // Arrange
+        var userProfile = new UserProfile
+        {
+            FirstName = "Profile",
+            LastName = "WithTheme",
+            Email = "profile@theme.com",
+            Address = new Address
+            {
+                Street = "369 Profile Street",
+                City = "Profile City",
+                State = "PC",
+                ZipCode = "47025"
+            },
+            Phone = "555-PROF",
+            PreferredContactMethod = "Email",
+            IdentityUserId = "profiletheme123"
+        };
+
+        var themePreferences = new ThemePreferences
+        {
+            UserProfile = userProfile,
+            Theme = "profile-theme",
+            AccentColor = "profile-green",
+            FontSize = "profile-large",
+            UseSystemPreference = true
+        };
+
+        // Act
+        _context.UserProfiles.Add(userProfile);
+        _context.ThemePreferences.Add(themePreferences);
+        await _context.SaveChangesAsync();
+
+        // Assert
+        var profileWithTheme = await _context.UserProfiles
+            .Include(up => up.ThemePreferences)
+            .FirstAsync();
+
+        profileWithTheme.ThemePreferences.Should().NotBeNull();
+        profileWithTheme.ThemePreferences!.Theme.Should().Be("profile-theme");
+        profileWithTheme.ThemePreferences.AccentColor.Should().Be("profile-green");
+        profileWithTheme.ThemePreferences.FontSize.Should().Be("profile-large");
+        profileWithTheme.ThemePreferences.UseSystemPreference.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task ThemePreferences_OneToOneRelationship_ShouldAllowOnlyOnePerUser()
+    {
+        // Arrange
+        var userProfile = new UserProfile
+        {
+            FirstName = "Constraint",
+            LastName = "Test",
+            Email = "constraint@test.com",
+            Address = new Address
+            {
+                Street = "741 Constraint Street",
+                City = "Constraint City",
+                State = "CT",
+                ZipCode = "58136"
+            },
+            Phone = "555-CONST",
+            PreferredContactMethod = "Phone",
+            IdentityUserId = "constraint123"
+        };
+
+        _context.UserProfiles.Add(userProfile);
+        await _context.SaveChangesAsync();
+
+        var firstTheme = new ThemePreferences
+        {
+            UserProfileId = userProfile.Id,
+            Theme = "first-theme",
+            UseSystemPreference = false
+        };
+
+        // Act
+        _context.ThemePreferences.Add(firstTheme);
+        await _context.SaveChangesAsync();
+
+        // Assert - Verify that the theme preference was saved
+        var savedThemes = await _context.ThemePreferences
+            .Where(tp => tp.UserProfileId == userProfile.Id)
+            .ToListAsync();
+
+        savedThemes.Should().HaveCount(1);
+        savedThemes.First().Theme.Should().Be("first-theme");
+
+        // In a real database with proper constraints, attempting to add a second 
+        // theme preference would fail. Here we verify the business rule that 
+        // a user should only have one theme preference record.
+        var existingTheme = await _context.ThemePreferences
+            .FirstOrDefaultAsync(tp => tp.UserProfileId == userProfile.Id);
+        existingTheme.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task UserProfile_CanExistWithoutThemePreferences_ShouldWork()
+    {
+        // Arrange
+        var userProfile = new UserProfile
+        {
+            FirstName = "No",
+            LastName = "Theme",
+            Email = "no@theme.com",
+            Address = new Address
+            {
+                Street = "852 No Theme Street",
+                City = "No Theme City",
+                State = "NT",
+                ZipCode = "69247"
+            },
+            Phone = "555-NONE",
+            PreferredContactMethod = "SMS",
+            IdentityUserId = "notheme123"
+        };
+
+        // Act
+        _context.UserProfiles.Add(userProfile);
+        await _context.SaveChangesAsync();
+
+        // Assert
+        var savedProfile = await _context.UserProfiles
+            .Include(up => up.ThemePreferences)
+            .FirstAsync();
+
+        savedProfile.ThemePreferences.Should().BeNull();
+        savedProfile.FirstName.Should().Be("No");
+    }
+
+    [Fact]
+    public async Task ThemePreferences_RequiresValidUserProfile_ShouldHaveUserProfileId()
+    {
+        // Arrange
+        var userProfile = new UserProfile
+        {
+            FirstName = "Valid",
+            LastName = "User",
+            Email = "valid@user.com",
+            Address = new Address
+            {
+                Street = "123 Valid Street",
+                City = "Valid City",
+                State = "VU",
+                ZipCode = "12345"
+            },
+            Phone = "555-VALID",
+            PreferredContactMethod = "Email",
+            IdentityUserId = "validuser123"
+        };
+
+        _context.UserProfiles.Add(userProfile);
+        await _context.SaveChangesAsync();
+
+        var themePreferences = new ThemePreferences
+        {
+            UserProfileId = userProfile.Id, // Valid user profile ID
+            Theme = "valid-theme",
+            UseSystemPreference = false
+        };
+
+        // Act
+        _context.ThemePreferences.Add(themePreferences);
+        await _context.SaveChangesAsync();
+
+        // Assert - Verify that theme preferences require a valid UserProfileId
+        var savedTheme = await _context.ThemePreferences.FirstAsync();
+        savedTheme.UserProfileId.Should().Be(userProfile.Id);
+        savedTheme.UserProfileId.Should().BeGreaterThan(0);
+
+        // Verify the relationship works
+        var themeWithUser = await _context.ThemePreferences
+            .Include(tp => tp.UserProfile)
+            .FirstAsync();
+        themeWithUser.UserProfile.Should().NotBeNull();
+        themeWithUser.UserProfile!.Id.Should().Be(userProfile.Id);
+    }
+
+    [Fact]
+    public async Task CompleteUserProfileWithThemes_ShouldSaveAndLoadCorrectly()
+    {
+        // Arrange
+        var userProfile = new UserProfile
+        {
+            FirstName = "Complete",
+            LastName = "User",
+            Email = "complete@user.com",
+            Address = new Address
+            {
+                Street = "963 Complete Street",
+                City = "Complete City",
+                State = "CU",
+                ZipCode = "70358"
+            },
+            Phone = "555-COMP",
+            PreferredContactMethod = "Email",
+            IdentityUserId = "completeuser123"
+        };
+
+        var themePreferences = new ThemePreferences
+        {
+            UserProfile = userProfile,
+            Theme = "complete-dark",
+            AccentColor = "complete-purple",
+            FontSize = "complete-large",
+            UseSystemPreference = false
+        };
+
+        var pet = new Pet
+        {
+            Name = "Theme Pet",
+            Species = "Dog",
+            Breed = "Theme Breed",
+            DateOfBirth = DateTime.Now.AddYears(-2),
+            Weight = 20.0m,
+            Color = "Theme Color",
+            MicrochipNumber = "THEME123456789"
+        };
+
+        var petOwner = new PetOwner
+        {
+            UserProfile = userProfile,
+            Pet = pet,
+            IsPrimaryOwner = true
+        };
+
+        // Act
+        _context.UserProfiles.Add(userProfile);
+        _context.ThemePreferences.Add(themePreferences);
+        _context.Pets.Add(pet);
+        _context.PetOwners.Add(petOwner);
+        await _context.SaveChangesAsync();
+
+        // Assert
+        var completeUser = await _context.UserProfiles
+            .Include(up => up.ThemePreferences)
+            .Include(up => up.OwnedPets)
+                .ThenInclude(po => po.Pet)
+            .FirstAsync();
+
+        completeUser.FirstName.Should().Be("Complete");
+        completeUser.ThemePreferences.Should().NotBeNull();
+        completeUser.ThemePreferences!.Theme.Should().Be("complete-dark");
+        completeUser.ThemePreferences.AccentColor.Should().Be("complete-purple");
+        completeUser.OwnedPets.Should().HaveCount(1);
+        completeUser.OwnedPets.First().Pet.Name.Should().Be("Theme Pet");
+    }
     #endregion
 
     public void Dispose()

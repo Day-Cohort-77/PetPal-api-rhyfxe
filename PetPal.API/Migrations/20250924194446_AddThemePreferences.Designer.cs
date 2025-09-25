@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using PetPal.API.Data;
@@ -11,9 +12,11 @@ using PetPal.API.Data;
 namespace PetPal.API.Migrations
 {
     [DbContext(typeof(PetPalDbContext))]
-    partial class PetPalDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250924194446_AddThemePreferences")]
+    partial class AddThemePreferences
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -442,73 +445,6 @@ namespace PetPal.API.Migrations
 
                     b.ToTable("PetOwners");
                 });
-modelBuilder.Entity("PetPal.API.Models.TrainingProgress", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime?>("CompletionDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int?>("Duration")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("DurationType")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime?>("GoalDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<bool>("IsSharedWithTrainer")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("Notes")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int>("PetId")
-                        .HasColumnType("integer");
-
-                    b.Property<int?>("ProficiencyLevel")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("SkillName")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("StartDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("TrainerNotes")
-                        .HasColumnType("text");
-
-                    b.Property<string>("TrainingGoal")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("PetId");
-
-                    b.ToTable("TrainingProgress");
-                });
-
 
             modelBuilder.Entity("PetPal.API.Models.ThemePreferences", b =>
                 {
@@ -518,14 +454,11 @@ modelBuilder.Entity("PetPal.API.Models.TrainingProgress", b =>
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-
                     b.Property<string>("AccentColor")
                         .HasColumnType("text");
 
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
-
 
                     b.Property<string>("FontSize")
                         .HasColumnType("text");
@@ -763,17 +696,6 @@ modelBuilder.Entity("PetPal.API.Models.TrainingProgress", b =>
                     b.Navigation("UserProfile");
                 });
 
-            modelBuilder.Entity("PetPal.API.Models.TrainingProgress", b =>
-                {
-                    b.HasOne("PetPal.API.Models.Pet", "Pet")
-                        .WithMany("TrainingProgress")
-                        .HasForeignKey("PetId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Pet");
-                                    });
-
             modelBuilder.Entity("PetPal.API.Models.ThemePreferences", b =>
                 {
                     b.HasOne("PetPal.API.Models.UserProfile", "UserProfile")
@@ -841,8 +763,6 @@ modelBuilder.Entity("PetPal.API.Models.TrainingProgress", b =>
                     b.Navigation("Medications");
 
                     b.Navigation("Owners");
-
-                    b.Navigation("TrainingProgress");
                 });
 
             modelBuilder.Entity("PetPal.API.Models.UserProfile", b =>
