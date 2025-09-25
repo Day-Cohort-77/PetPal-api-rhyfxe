@@ -749,6 +749,571 @@ public class TrainingProgressTests : IDisposable
     }
     #endregion
 
+    #region Charts and Analytics Tests
+    [Fact]
+    public async Task TrainingProgress_ChartDataAggregation_ShouldCalculateCorrectly()
+    {
+        // Arrange
+        var pet = new Pet
+        {
+            Name = "Chart Data Test",
+            Species = "Dog",
+            Breed = "Analytics Breed",
+            DateOfBirth = DateTime.Now.AddYears(-2),
+            Weight = 25.0m,
+            Color = "Chart Color",
+            MicrochipNumber = "CHT123456789"
+        };
+
+        _context.Pets.Add(pet);
+        await _context.SaveChangesAsync();
+
+        var baseDate = DateTime.UtcNow.Date;
+        var trainingRecords = new[]
+        {
+            new TrainingProgress
+            {
+                Pet = pet,
+                PetId = pet.Id,
+                SkillName = "Sit",
+                Description = "Basic sit command",
+                Status = "Completed",
+                ProficiencyLevel = 8,
+                Duration = 15,
+                DurationType = "Minutes",
+                StartDate = baseDate.AddDays(-5),
+                CompletionDate = baseDate.AddDays(-4),
+                Notes = "Great progress",
+                IsSharedWithTrainer = true
+            },
+            new TrainingProgress
+            {
+                Pet = pet,
+                PetId = pet.Id,
+                SkillName = "Stay",
+                Description = "Basic stay command",
+                Status = "InProgress",
+                ProficiencyLevel = 6,
+                Duration = 20,
+                DurationType = "Minutes",
+                StartDate = baseDate.AddDays(-3),
+                Notes = "Needs more work",
+                IsSharedWithTrainer = false
+            },
+            new TrainingProgress
+            {
+                Pet = pet,
+                PetId = pet.Id,
+                SkillName = "Sit",
+                Description = "Advanced sit command",
+                Status = "Completed",
+                ProficiencyLevel = 9,
+                Duration = 10,
+                DurationType = "Minutes",
+                StartDate = baseDate.AddDays(-1),
+                CompletionDate = baseDate,
+                Notes = "Excellent response time",
+                IsSharedWithTrainer = true
+            }
+        };
+
+        _context.TrainingProgress.AddRange(trainingRecords);
+        await _context.SaveChangesAsync();
+
+        // Act - Simulate chart data calculation
+        var sessions = await _context.TrainingProgress
+            .Where(tp => tp.PetId == pet.Id)
+            .OrderBy(tp => tp.StartDate)
+            .ToListAsync();
+
+        var dailyProgress = sessions
+            .GroupBy(s => s.StartDate.Date)
+            .Select(g => new
+            {
+                Date = g.Key,
+                SessionCount = g.Count(),
+                AverageProficiency = g.Where(s => s.ProficiencyLevel.HasValue)
+                                    .Average(s => s.ProficiencyLevel ?? 0),
+                CompletedSessions = g.Count(s => s.Status == "Completed")
+            })
+            .OrderBy(d => d.Date)
+            .ToList();
+
+        var totalSessions = sessions.Count;
+        var completedSessions = sessions.Count(s => s.Status == "Completed");
+        var successRate = totalSessions > 0 ? Math.Round((double)completedSessions / totalSessions * 100, 1) : 0;
+
+        // Assert
+        sessions.Should().HaveCount(3);
+        dailyProgress.Should().HaveCount(3); // 3 different dates
+        
+        totalSessions.Should().Be(3);
+        completedSessions.Should().Be(2);
+        successRate.Should().Be(66.7);
+        
+        // Check proficiency progression for "Sit" skill
+        var sitSessions = sessions.Where(s => s.SkillName == "Sit").OrderBy(s => s.StartDate).ToList();
+        sitSessions.Should().HaveCount(2);
+        sitSessions.First().ProficiencyLevel.Should().Be(8);
+        sitSessions.Last().ProficiencyLevel.Should().Be(9);
+    }
+
+    [Fact]
+    public async Task TrainingProgress_SkillFilteredCharts_ShouldReturnCorrectData()
+    {
+        // Arrange
+        var pet = new Pet
+        {
+            Name = "Skill Filter Test",
+            Species = "Dog",
+            Breed = "Filter Breed",
+            DateOfBirth = DateTime.Now.AddYears(-1),
+            Weight = 20.0m,
+            Color = "Filter Color",
+            MicrochipNumber = "FLT123456789"
+        };
+
+        _context.Pets.Add(pet);
+        await _context.SaveChangesAsync();
+
+        var trainingRecords = new[]
+        {
+            new TrainingProgress
+            {
+                Pet = pet,
+                PetId = pet.Id,
+                SkillName = "Sit",
+                Description = "Sit training session 1",
+                Status = "InProgress",
+                ProficiencyLevel = 5,
+                StartDate = DateTime.UtcNow.AddDays(-2),
+                Notes = "First session",
+                IsSharedWithTrainer = false
+            },
+            new TrainingProgress
+            {
+                Pet = pet,
+                PetId = pet.Id,
+                SkillName = "Stay",
+                Description = "Stay training session 1",
+                Status = "Completed",
+                ProficiencyLevel = 8,
+                StartDate = DateTime.UtcNow.AddDays(-2),
+                Notes = "Good progress on stay",
+                IsSharedWithTrainer = true
+            },
+            new TrainingProgress
+            {
+                Pet = pet,
+                PetId = pet.Id,
+                SkillName = "Sit",
+                Description = "Sit training session 2",
+                Status = "Completed",
+                ProficiencyLevel = 7,
+                StartDate = DateTime.UtcNow.AddDays(-1),
+                Notes = "Improvement shown",
+                IsSharedWithTrainer = false
+            }
+        };
+
+        _context.TrainingProgress.AddRange(trainingRecords);
+        await _context.SaveChangesAsync();
+
+        // Act - Filter by "Sit" skill only
+        var skillName = "Sit";
+        var filteredSessions = await _context.TrainingProgress
+            .Where(tp => tp.PetId == pet.Id && tp.SkillName == skillName)
+            .OrderBy(tp => tp.StartDate)
+            .ToListAsync();
+
+        var proficiencyTrend = filteredSessions
+            .Where(s => s.ProficiencyLevel.HasValue)
+            .OrderBy(s => s.StartDate)
+            .Select(s => new { Date = s.StartDate.Date, Proficiency = s.ProficiencyLevel!.Value })
+            .ToList();
+
+        // Assert
+        filteredSessions.Should().HaveCount(2);
+        filteredSessions.Should().OnlyContain(s => s.SkillName == "Sit");
+        
+        proficiencyTrend.Should().HaveCount(2);
+        proficiencyTrend.First().Proficiency.Should().Be(5);
+        proficiencyTrend.Last().Proficiency.Should().Be(7);
+        
+        // Verify trend shows improvement
+        proficiencyTrend.Last().Proficiency.Should().BeGreaterThan(proficiencyTrend.First().Proficiency);
+    }
+
+    [Fact]
+    public async Task TrainingProgress_DateRangeFiltering_ShouldWorkCorrectly()
+    {
+        // Arrange
+        var pet = new Pet
+        {
+            Name = "Date Range Test",
+            Species = "Dog",
+            Breed = "Date Breed",
+            DateOfBirth = DateTime.Now.AddYears(-1),
+            Weight = 18.0m,
+            Color = "Date Color",
+            MicrochipNumber = "DTE123456789"
+        };
+
+        _context.Pets.Add(pet);
+        await _context.SaveChangesAsync();
+
+        var baseDate = DateTime.UtcNow.Date;
+        var trainingRecords = new[]
+        {
+            new TrainingProgress
+            {
+                Pet = pet,
+                PetId = pet.Id,
+                SkillName = "Come",
+                Description = "Old training session",
+                Status = "Completed",
+                ProficiencyLevel = 6,
+                StartDate = baseDate.AddDays(-10),
+                Notes = "Old session outside range",
+                IsSharedWithTrainer = false
+            },
+            new TrainingProgress
+            {
+                Pet = pet,
+                PetId = pet.Id,
+                SkillName = "Heel",
+                Description = "Recent training session",
+                Status = "InProgress",
+                ProficiencyLevel = 4,
+                StartDate = baseDate.AddDays(-2),
+                Notes = "Recent session in range",
+                IsSharedWithTrainer = true
+            },
+            new TrainingProgress
+            {
+                Pet = pet,
+                PetId = pet.Id,
+                SkillName = "Down",
+                Description = "Current training session",
+                Status = "InProgress",
+                ProficiencyLevel = 5,
+                StartDate = baseDate,
+                Notes = "Current session in range",
+                IsSharedWithTrainer = false
+            }
+        };
+
+        _context.TrainingProgress.AddRange(trainingRecords);
+        await _context.SaveChangesAsync();
+
+        // Act - Filter by date range (last 7 days)
+        var startDate = baseDate.AddDays(-7);
+        var endDate = baseDate;
+        
+        var filteredSessions = await _context.TrainingProgress
+            .Where(tp => tp.PetId == pet.Id && 
+                        tp.StartDate >= startDate && 
+                        tp.StartDate <= endDate)
+            .OrderBy(tp => tp.StartDate)
+            .ToListAsync();
+
+        // Assert
+        filteredSessions.Should().HaveCount(2);
+        filteredSessions.Should().NotContain(s => s.SkillName == "Come");
+        filteredSessions.Should().Contain(s => s.SkillName == "Heel");
+        filteredSessions.Should().Contain(s => s.SkillName == "Down");
+        
+        // All sessions should be within the date range
+        filteredSessions.Should().OnlyContain(s => s.StartDate >= startDate && s.StartDate <= endDate);
+    }
+
+    [Fact]
+    public async Task TrainingProgress_DurationTrendCalculation_ShouldWorkCorrectly()
+    {
+        // Arrange
+        var pet = new Pet
+        {
+            Name = "Duration Trend Test",
+            Species = "Dog",
+            Breed = "Duration Breed",
+            DateOfBirth = DateTime.Now.AddYears(-2),
+            Weight = 22.0m,
+            Color = "Duration Color",
+            MicrochipNumber = "DRT123456789"
+        };
+
+        _context.Pets.Add(pet);
+        await _context.SaveChangesAsync();
+
+        var baseDate = DateTime.UtcNow.Date;
+        var trainingRecords = new[]
+        {
+            new TrainingProgress
+            {
+                Pet = pet,
+                PetId = pet.Id,
+                SkillName = "Fetch",
+                Description = "Fetch session 1",
+                Status = "InProgress",
+                ProficiencyLevel = 3,
+                Duration = 30,
+                DurationType = "Minutes",
+                StartDate = baseDate.AddDays(-3),
+                Notes = "Long initial session",
+                IsSharedWithTrainer = false
+            },
+            new TrainingProgress
+            {
+                Pet = pet,
+                PetId = pet.Id,
+                SkillName = "Fetch",
+                Description = "Fetch session 2",
+                Status = "InProgress",
+                ProficiencyLevel = 5,
+                Duration = 25,
+                DurationType = "Minutes",
+                StartDate = baseDate.AddDays(-2),
+                Notes = "Shorter session, better focus",
+                IsSharedWithTrainer = false
+            },
+            new TrainingProgress
+            {
+                Pet = pet,
+                PetId = pet.Id,
+                SkillName = "Fetch",
+                Description = "Fetch session 3",
+                Status = "Completed",
+                ProficiencyLevel = 8,
+                Duration = 15,
+                DurationType = "Minutes",
+                StartDate = baseDate.AddDays(-1),
+                Notes = "Short effective session",
+                IsSharedWithTrainer = true
+            },
+            new TrainingProgress
+            {
+                Pet = pet,
+                PetId = pet.Id,
+                SkillName = "Roll Over",
+                Description = "Roll over practice",
+                Status = "InProgress",
+                ProficiencyLevel = 4,
+                Duration = 10,
+                DurationType = "Repetitions",
+                StartDate = baseDate,
+                Notes = "Different duration type",
+                IsSharedWithTrainer = false
+            }
+        };
+
+        _context.TrainingProgress.AddRange(trainingRecords);
+        await _context.SaveChangesAsync();
+
+        // Act - Calculate duration trends
+        var sessions = await _context.TrainingProgress
+            .Where(tp => tp.PetId == pet.Id && tp.Duration.HasValue)
+            .OrderBy(tp => tp.StartDate)
+            .ToListAsync();
+
+        var durationTrend = sessions
+            .Where(s => s.Duration.HasValue)
+            .OrderBy(s => s.StartDate)
+            .Select(s => new { 
+                Date = s.StartDate.Date, 
+                Duration = s.Duration!.Value,
+                DurationType = s.DurationType ?? "Minutes"
+            })
+            .ToList();
+
+        var minutesSessions = sessions.Where(s => s.DurationType == "Minutes").ToList();
+        var averageDuration = minutesSessions.Count > 0 ? 
+            minutesSessions.Average(s => s.Duration ?? 0) : 0;
+
+        // Assert
+        sessions.Should().HaveCount(4);
+        durationTrend.Should().HaveCount(4);
+        
+        minutesSessions.Should().HaveCount(3);
+        averageDuration.Should().BeApproximately(23.33, 0.1);
+        
+        // Verify duration trend for Fetch skill shows decreasing duration (more efficient training)
+        var fetchSessions = durationTrend
+            .Where(d => d.DurationType == "Minutes")
+            .Take(3)
+            .ToList();
+        
+        fetchSessions.Should().HaveCount(3);
+        fetchSessions[0].Duration.Should().Be(30);
+        fetchSessions[1].Duration.Should().Be(25);
+        fetchSessions[2].Duration.Should().Be(15);
+        
+        // Trend should show decreasing duration (improvement)
+        fetchSessions[2].Duration.Should().BeLessThan(fetchSessions[0].Duration);
+    }
+
+    [Fact]
+    public async Task TrainingProgress_EmptyDatasets_ShouldReturnCorrectDefaults()
+    {
+        // Arrange
+        var pet = new Pet
+        {
+            Name = "Empty Data Test",
+            Species = "Dog",
+            Breed = "Empty Breed",
+            DateOfBirth = DateTime.Now.AddYears(-1),
+            Weight = 15.0m,
+            Color = "Empty Color",
+            MicrochipNumber = "EMP123456789"
+        };
+
+        _context.Pets.Add(pet);
+        await _context.SaveChangesAsync();
+
+        // Act - Query with no training data
+        var sessions = await _context.TrainingProgress
+            .Where(tp => tp.PetId == pet.Id)
+            .ToListAsync();
+
+        var totalSessions = sessions.Count;
+        var completedSessions = sessions.Count(s => s.Status == "Completed");
+        var successRate = totalSessions > 0 ? 
+            Math.Round((double)completedSessions / totalSessions * 100, 1) : 0;
+
+        // Assert
+        sessions.Should().BeEmpty();
+        totalSessions.Should().Be(0);
+        completedSessions.Should().Be(0);
+        successRate.Should().Be(0);
+    }
+
+    [Theory]
+    [InlineData("NotStarted", "InProgress", "Completed")]
+    [InlineData("InProgress", "NeedsWork", "Completed")]
+    public async Task TrainingProgress_MultipleStatusFiltering_ShouldWorkCorrectly(params string[] statuses)
+    {
+        // Arrange
+        var pet = new Pet
+        {
+            Name = "Multi Status Test",
+            Species = "Dog",
+            Breed = "Status Breed",
+            DateOfBirth = DateTime.Now.AddYears(-1),
+            Weight = 20.0m,
+            Color = "Status Color",
+            MicrochipNumber = "MST123456789"
+        };
+
+        _context.Pets.Add(pet);
+        await _context.SaveChangesAsync();
+
+        var trainingRecords = new List<TrainingProgress>();
+        for (int i = 0; i < statuses.Length; i++)
+        {
+            trainingRecords.Add(new TrainingProgress
+            {
+                Pet = pet,
+                PetId = pet.Id,
+                SkillName = $"Skill {i + 1}",
+                Description = $"Training for status {statuses[i]}",
+                Status = statuses[i],
+                ProficiencyLevel = (i + 1) * 2,
+                StartDate = DateTime.UtcNow.AddDays(-i),
+                Notes = $"Notes for {statuses[i]}",
+                IsSharedWithTrainer = i % 2 == 0
+            });
+        }
+
+        _context.TrainingProgress.AddRange(trainingRecords);
+        await _context.SaveChangesAsync();
+
+        // Act & Assert - Test filtering by each status
+        foreach (var status in statuses)
+        {
+            var filteredSessions = await _context.TrainingProgress
+                .Where(tp => tp.PetId == pet.Id && tp.Status == status)
+                .ToListAsync();
+
+            filteredSessions.Should().HaveCount(1);
+            filteredSessions.Should().OnlyContain(s => s.Status == status);
+        }
+
+        // Test filtering by multiple statuses
+        var multipleStatusSessions = await _context.TrainingProgress
+            .Where(tp => tp.PetId == pet.Id && statuses.Contains(tp.Status))
+            .ToListAsync();
+
+        multipleStatusSessions.Should().HaveCount(statuses.Length);
+    }
+
+    [Fact]
+    public async Task TrainingProgress_SharedWithTrainerFiltering_ShouldWorkCorrectly()
+    {
+        // Arrange
+        var pet = new Pet
+        {
+            Name = "Trainer Share Test",
+            Species = "Dog", 
+            Breed = "Share Breed",
+            DateOfBirth = DateTime.Now.AddYears(-1),
+            Weight = 19.0m,
+            Color = "Share Color",
+            MicrochipNumber = "SHR123456789"
+        };
+
+        _context.Pets.Add(pet);
+        await _context.SaveChangesAsync();
+
+        var trainingRecords = new[]
+        {
+            new TrainingProgress
+            {
+                Pet = pet,
+                PetId = pet.Id,
+                SkillName = "Shared Skill",
+                Description = "This is shared with trainer",
+                Status = "InProgress",
+                ProficiencyLevel = 6,
+                StartDate = DateTime.UtcNow.AddDays(-1),
+                Notes = "Shared session notes",
+                IsSharedWithTrainer = true
+            },
+            new TrainingProgress
+            {
+                Pet = pet,
+                PetId = pet.Id,
+                SkillName = "Private Skill",
+                Description = "This is not shared with trainer",
+                Status = "Completed",
+                ProficiencyLevel = 8,
+                StartDate = DateTime.UtcNow,
+                Notes = "Private session notes",
+                IsSharedWithTrainer = false
+            }
+        };
+
+        _context.TrainingProgress.AddRange(trainingRecords);
+        await _context.SaveChangesAsync();
+
+        // Act - Filter by shared with trainer
+        var sharedSessions = await _context.TrainingProgress
+            .Where(tp => tp.PetId == pet.Id && tp.IsSharedWithTrainer == true)
+            .ToListAsync();
+
+        var privateSessions = await _context.TrainingProgress
+            .Where(tp => tp.PetId == pet.Id && tp.IsSharedWithTrainer == false)
+            .ToListAsync();
+
+        // Assert
+        sharedSessions.Should().HaveCount(1);
+        sharedSessions.First().SkillName.Should().Be("Shared Skill");
+        sharedSessions.Should().OnlyContain(s => s.IsSharedWithTrainer == true);
+
+        privateSessions.Should().HaveCount(1);
+        privateSessions.First().SkillName.Should().Be("Private Skill");
+        privateSessions.Should().OnlyContain(s => s.IsSharedWithTrainer == false);
+    }
+    #endregion
+
     public void Dispose()
     {
         _context.Dispose();
