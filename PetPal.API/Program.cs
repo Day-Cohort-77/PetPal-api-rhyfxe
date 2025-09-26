@@ -5,6 +5,7 @@ using PetPal.API.Data;
 using PetPal.API.Endpoints;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Http.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,128 +14,92 @@ builder.Services.AddDbContext<PetPalDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("PetPalDbConnectionString")));
 
 // Configure Identity
-builder.Services.AddIdentityCore<IdentityUser>(options =>
+builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
 {
-    // Password requirements
+    // Password settings
     options.Password.RequireDigit = true;
-    options.Password.RequiredLength = 6;
     options.Password.RequireLowercase = true;
     options.Password.RequireNonAlphanumeric = false;
     options.Password.RequireUppercase = true;
+    options.Password.RequiredLength = 6;
+
+    // User settings
+    options.User.RequireUniqueEmail = true;
+
+    // Sign-in settings
+    options.SignIn.RequireConfirmedEmail = false;
+    options.SignIn.RequireConfirmedPhoneNumber = false;
 })
-.AddRoles<IdentityRole>() // Add role management
-.AddEntityFrameworkStores<PetPalDbContext>() // Use our DbContext
-.AddSignInManager() // Add SignInManager
-.AddDefaultTokenProviders(); // Add token providers
+.AddEntityFrameworkStores<PetPalDbContext>()
+.AddDefaultTokenProviders();
 
 // Configure authentication with cookies
-builder.Services.AddAuthentication(IdentityConstants.ApplicationScheme)
-    .AddIdentityCookies(); // Use Identity's default cookie configuration
-
-// Configure the Identity cookie options
 builder.Services.ConfigureApplicationCookie(options =>
 {
-    options.Cookie.Name = "PetPalAuth";
-    options.Cookie.HttpOnly = true;
-    options.ExpireTimeSpan = TimeSpan.FromHours(8);
-
-    if (builder.Environment.IsDevelopment())
-    {
-        // Development settings for localhost
-        options.Cookie.SameSite = SameSiteMode.Lax; // Less strict for localhost
-        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest; // Allow HTTP in dev
-    }
-    else
-    {
-        // Production settings
-        options.Cookie.SameSite = SameSiteMode.None; // Required for cross-origin requests
-        options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // Require HTTPS in production
-    }
-
+    options.LoginPath = "/auth/login";
+    options.LogoutPath = "/auth/logout";
+    options.AccessDeniedPath = "/auth/access-denied";
+    options.ExpireTimeSpan = TimeSpan.FromDays(30);
     options.SlidingExpiration = true;
-
-    // Prevent redirects - return status codes instead
-    options.Events = new CookieAuthenticationEvents
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+    options.Cookie.SameSite = SameSiteMode.Lax;
+    options.Events.OnRedirectToLogin = context =>
     {
-        OnRedirectToLogin = context =>
-        {
-            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-            return Task.CompletedTask;
-        },
-        OnRedirectToAccessDenied = context =>
-        {
-            context.Response.StatusCode = StatusCodes.Status403Forbidden;
-            return Task.CompletedTask;
-        }
+        context.Response.StatusCode = 401;
+        return Task.CompletedTask;
     };
 });
 
 // Configure authorization policies
-builder.Services.AddAuthorization(options =>
-{
-    // Add a policy for administrators
-    options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
-
-    // Add a policy for veterinarians
-    options.AddPolicy("VetAccess", policy => policy.RequireRole("Admin", "Veterinarian"));
-});
+builder.Services.AddAuthorizationBuilder()
+    .AddPolicy("RequireAdminRole", policy => policy.RequireRole("Admin"))
+    .AddPolicy("RequireUserRole", policy => policy.RequireRole("User", "Admin"))
+    .AddPolicy("RequireVeterinarianRole", policy => policy.RequireRole("Veterinarian", "Admin"));
 
 // Configure CORS
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowLocalhost", policy =>
+    options.AddDefaultPolicy(policy =>
     {
-        policy.WithOrigins("http://localhost:3000", "http://localhost:5173") // React and Vite default ports
-              .AllowAnyHeader()
+        policy.WithOrigins("http://localhost:3000", "http://localhost:5173")
               .AllowAnyMethod()
-              .AllowCredentials() // Allow credentials (cookies)
-              .SetPreflightMaxAge(TimeSpan.FromMinutes(10)); // Cache preflight requests
+              .AllowAnyHeader()
+              .AllowCredentials();
     });
 });
 
 // Add AutoMapper
-builder.Services.AddAutoMapper(typeof(Program).Assembly);
+builder.Services.AddAutoMapper(typeof(Program));
 
 // Configure JSON serialization to handle circular references
-builder.Services.AddControllers()
-    .AddJsonOptions(options =>
-    {
-        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
-        options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
-        options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
-        options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
-    });
+builder.Services.Configure<JsonOptions>(options =>
+{
+    options.SerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+    options.SerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+});
 
 // Add services for API explorer
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// Initialize the database
-using (var scope = app.Services.CreateScope())
-{
-    var services = scope.ServiceProvider;
-    var logger = services.GetRequiredService<ILogger<Program>>();
-
-    try
-    {
-        await DbInitializer.Initialize(services, logger);
-    }
-    catch (Exception ex)
-    {
-        logger.LogError(ex, "An error occurred while initializing the database.");
-    }
-}
+// Initialize the database - FIXED!
+var logger = app.Services.GetRequiredService<ILogger<Program>>();
+await DbInitializer.Initialize(app.Services, logger);
 
 // Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {
-    // Development-specific middleware
-    app.UseDeveloperExceptionPage();
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
 
 // Use CORS middleware BEFORE authentication
-app.UseCors("AllowLocalhost");
+app.UseCors();
+
+app.UseHttpsRedirection();
 
 // Enable static file serving for uploads
 app.UseStaticFiles();
@@ -144,18 +109,15 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 // Add a simple health check endpoint
-app.MapGet("/", () => "PetPal API is running!");
+app.MapGet("/health", () => new { status = "healthy", timestamp = DateTime.UtcNow });
 
 // Map API endpoints
 app.MapAuthEndpoints();
 app.MapPetEndpoints();
 app.MapHealthRecordEndpoints();
+app.MapAppointmentEndpoints();
 app.MapTrainingProgressEndpoints();
 app.MapSettingsEndpoints();
 app.MapFileUploadEndpoints();
-// TODO: Map other endpoints
-app.MapAppointmentEndpoints();
-// app.MapMedicationEndpoints();
-// app.MapVeterinarianEndpoints();
 
 app.Run();
