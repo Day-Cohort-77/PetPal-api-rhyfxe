@@ -172,7 +172,7 @@ Delete a pet.
 
 ## Medication Endpoints
 
-### GET /medications/{petId}
+### GET /medications/pet/{petId}
 Get all medications for a specific pet.
 **Auth Required:** Yes
 **Query Parameters:**
@@ -198,10 +198,10 @@ Get all medications for a specific pet.
 ]
 ```
 
-### GET /medications/{petId}/{id}
+### GET /medications/{id}
 Get specific medication by ID.
 
-### POST /medications/{petId}
+### POST /medications
 Add new medication for a pet.
 ```json
 {
@@ -216,10 +216,10 @@ Add new medication for a pet.
 }
 ```
 
-### PUT /medications/{petId}/{id}
+### PUT /medications/{id}
 Update existing medication.
 
-### DELETE /medications/{petId}/{id}
+### DELETE /medications/{id}
 Delete a medication.
 
 ## Appointment Endpoints
