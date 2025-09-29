@@ -171,6 +171,72 @@ This document provides a quick reference for all available endpoints in the PetP
 - **Authentication**: Required (Pet owner or Admin)
 - **Response**: 204 No Content
 
+## Medication Endpoints
+
+### Get Pet's Medications
+- **URL**: `/medications/pet/{petId}`
+- **Method**: `GET`
+- **Authentication**: Required (Pet owner, Admin, or Veterinarian)
+- **Response**: Array of medications for the specified pet
+- **Query Parameters**:
+  - `activeOnly` (boolean): Filter for active medications only
+  - `sortBy` (string): Sort by "startDate", "name", or "endDate"
+
+### Get Medication by ID
+- **URL**: `/medications/{id}`
+- **Method**: `GET`
+- **Authentication**: Required (Pet owner, Admin, or Veterinarian)
+- **Response**: Single medication details
+
+### Create Medication
+- **URL**: `/medications`
+- **Method**: `POST`
+- **Authentication**: Required (Admin or Veterinarian roles only)
+- **Request Body**:
+  ```json
+  {
+    "petId": 1,
+    "name": "Rimadyl",
+    "dosage": "25mg",
+    "frequency": "Twice daily with meals",
+    "startDate": "2025-09-26T00:00:00Z",
+    "endDate": "2025-12-26T00:00:00Z",
+    "instructions": "Give with food to reduce stomach upset",
+    "prescriber": "Dr. Sarah Smith, DVM"
+  }
+  ```
+- **Response**: Created medication with 201 Created status
+
+### Update Medication
+- **URL**: `/medications/{id}`
+- **Method**: `PUT`
+- **Authentication**: Required (Admin or Veterinarian roles only)
+- **Request Body**:
+  ```json
+  {
+    "name": "Rimadyl",
+    "dosage": "25mg",
+    "frequency": "Once daily with meals",
+    "startDate": "2025-09-26T00:00:00Z",
+    "endDate": "2025-12-26T00:00:00Z",
+    "instructions": "Reduced dosage - give with food",
+    "prescriber": "Dr. Sarah Smith, DVM",
+    "isActive": true
+  }
+  ```
+- **Response**: Updated medication details
+
+### Delete Medication
+- **URL**: `/medications/{id}`
+- **Method**: `DELETE`
+- **Authentication**: Required (Admin or Veterinarian roles only)
+- **Response**: 204 No Content
+
+### Role-Based Access Control
+- **Users**: Can view medications for their own pets only
+- **Veterinarians**: Full CRUD access to all medications
+- **Admins**: Full system access including medication management
+
 ## Appointment Endpoints
 
 ### Get Pet's Appointments
