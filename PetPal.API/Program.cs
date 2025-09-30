@@ -160,6 +160,9 @@ else
     app.UseCors("AllowLocalhost"); // Strict policy in production
 }
 
+// Enable static file serving for uploads
+app.UseStaticFiles();
+
 // Add authentication middleware
 app.UseAuthentication();
 
@@ -202,6 +205,11 @@ app.MapPetEndpoints();
 app.MapHealthRecordEndpoints();
 app.MapTrainingProgressEndpoints();
 app.MapSettingsEndpoints();
+<<<<<<< HEAD
+=======
+app.MapFileUploadEndpoints();
+// TODO: Map other endpoints
+>>>>>>> 57ff89c (Helping dumb dylan)
 app.MapAppointmentEndpoints();
 app.MapMedicationEndpoints(); 
 // app.MapVeterinarianEndpoints();
