@@ -205,11 +205,8 @@ app.MapPetEndpoints();
 app.MapHealthRecordEndpoints();
 app.MapTrainingProgressEndpoints();
 app.MapSettingsEndpoints();
-<<<<<<< HEAD
-=======
 app.MapFileUploadEndpoints();
 // TODO: Map other endpoints
->>>>>>> 57ff89c (Helping dumb dylan)
 app.MapAppointmentEndpoints();
 app.MapMedicationEndpoints(); 
 // app.MapVeterinarianEndpoints();
