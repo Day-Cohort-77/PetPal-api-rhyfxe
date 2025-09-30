@@ -1,4 +1,4 @@
-            using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using PetPal.API.Data;
 using PetPal.API.Models;
 using FluentAssertions;
@@ -29,10 +29,12 @@ public class ComprehensiveModelTests : IDisposable
         var pet = new Pet
         {
             Name = "Buddy",
+            Gender = "Male",
             Species = "Dog",
             Breed = "Golden Retriever",
             DateOfBirth = new DateTime(2021, 6, 15),
             Weight = 25.5m,
+            WeightUnit = "lbs",
             Color = "Golden",
             ImageUrl = "https://example.com/images/buddy.jpg",
             MicrochipNumber = "123456789012345"
@@ -64,10 +66,12 @@ public class ComprehensiveModelTests : IDisposable
         var pet = new Pet
         {
             Name = "Tweety",
+            Gender = "Female",
             Species = "Bird",
             Breed = "Canary",
             DateOfBirth = DateTime.Now.AddYears(-2),
             Weight = 0.1m,
+            WeightUnit = "lbs",
             Color = "Yellow",
             ImageUrl = null, // Nullable field
             MicrochipNumber = "BIRD123456789"
@@ -90,10 +94,12 @@ public class ComprehensiveModelTests : IDisposable
         var pet = new Pet
         {
             Name = "Max",
+            Gender = "Male",
             Species = "Dog",
             Breed = "Labrador",
             DateOfBirth = DateTime.Now.AddYears(-3),
             Weight = 30.0m,
+            WeightUnit = "lbs",
             Color = "Black",
             MicrochipNumber = "DOG123456789"
         };
@@ -123,10 +129,12 @@ public class ComprehensiveModelTests : IDisposable
         var pet = new Pet
         {
             Name = "Original Name",
+            Gender = "Male",
             Species = "Dog",
             Breed = "Test",
             DateOfBirth = DateTime.Now.AddYears(-1),
             Weight = 10.0m,
+            WeightUnit = "lbs",
             Color = "Brown",
             MicrochipNumber = "TEST123456789"
         };
@@ -170,10 +178,12 @@ public class ComprehensiveModelTests : IDisposable
         var pet = new Pet
         {
             Name = "Luna",
+            Gender = "Female",
             Species = "Cat",
             Breed = "Persian",
             DateOfBirth = DateTime.Now.AddYears(-2),
             Weight = 4.5m,
+            WeightUnit = "lbs",
             Color = "White",
             MicrochipNumber = "CAT123456789"
         };
@@ -217,10 +227,12 @@ public class ComprehensiveModelTests : IDisposable
         var pet = new Pet
         {
             Name = "Rocky",
+            Gender = "Male",
             Species = "Dog",
             Breed = "Bulldog",
             DateOfBirth = DateTime.Now.AddYears(-4),
             Weight = 25.0m,
+            WeightUnit = "lbs",
             Color = "Brindle",
             MicrochipNumber = "DOG987654321"
         };
@@ -256,10 +268,12 @@ public class ComprehensiveModelTests : IDisposable
         var pet = new Pet
         {
             Name = "Whiskers",
+            Gender = "Male",
             Species = "Cat",
             Breed = "Maine Coon",
             DateOfBirth = DateTime.Now.AddYears(-1),
             Weight = 6.0m,
+            WeightUnit = "lbs",
             Color = "Tabby",
             MicrochipNumber = "CAT555666777"
         };
@@ -310,10 +324,12 @@ public class ComprehensiveModelTests : IDisposable
         var pet = new Pet
         {
             Name = "Bella",
+            Gender = "Female",
             Species = "Dog",
             Breed = "Beagle",
             DateOfBirth = DateTime.Now.AddYears(-3),
             Weight = 15.0m,
+            WeightUnit = "lbs",
             Color = "Tricolor",
             MicrochipNumber = "DOG111222333"
         };
@@ -374,10 +390,12 @@ public class ComprehensiveModelTests : IDisposable
         var pet = new Pet
         {
             Name = "Test Pet",
+            Gender = "Male",
             Species = "Dog",
             Breed = "Test Breed",
             DateOfBirth = DateTime.Now.AddYears(-1),
             Weight = 10.0m,
+            WeightUnit = "lbs",
             Color = "Test Color",
             MicrochipNumber = "TEST123456789"
         };
@@ -425,10 +443,12 @@ public class ComprehensiveModelTests : IDisposable
         var pet = new Pet
         {
             Name = "NavPet",
+            Gender = "Female",
             Species = "Cat",
             Breed = "Navigation Breed",
             DateOfBirth = DateTime.Now.AddYears(-2),
             Weight = 5.0m,
+            WeightUnit = "lbs",
             Color = "Navigation Color",
             MicrochipNumber = "NAV987654321"
         };
@@ -573,10 +593,12 @@ public class ComprehensiveModelTests : IDisposable
         var pet = new Pet
         {
             Name = "Mittens",
+            Gender = "Female",
             Species = "Cat",
             Breed = "Tabby",
             DateOfBirth = DateTime.Now.AddYears(-3),
             Weight = 4.8m,
+            WeightUnit = "lbs",
             Color = "Orange",
             MicrochipNumber = "CAT444555666"
         };
@@ -623,10 +645,12 @@ public class ComprehensiveModelTests : IDisposable
         var pet = new Pet
         {
             Name = "Charlie",
+            Gender = "Male",
             Species = "Dog",
             Breed = "Cocker Spaniel",
             DateOfBirth = DateTime.Now.AddYears(-5),
             Weight = 12.0m,
+            WeightUnit = "lbs",
             Color = "Black",
             MicrochipNumber = "DOG777888999"
         };
@@ -665,10 +689,12 @@ public class ComprehensiveModelTests : IDisposable
         var pet = new Pet
         {
             Name = "Fluffy",
+            Gender = "Female",
             Species = "Rabbit",
             Breed = "Holland Lop",
             DateOfBirth = DateTime.Now.AddYears(-2),
             Weight = 1.5m,
+            WeightUnit = "lbs",
             Color = "White",
             MicrochipNumber = "RAB123456789"
         };
@@ -709,10 +735,12 @@ public class ComprehensiveModelTests : IDisposable
         var pet = new Pet
         {
             Name = "ActiveTest",
+            Gender = "Male",
             Species = "Dog",
             Breed = "Test",
             DateOfBirth = DateTime.Now.AddYears(-1),
             Weight = 10.0m,
+            WeightUnit = "lbs",
             Color = "Test",
             MicrochipNumber = "TEST456789123"
         };
@@ -1032,10 +1060,12 @@ public class ComprehensiveModelTests : IDisposable
         var pet = new Pet
         {
             Name = "Owned Pet",
+            Gender = "Female",
             Species = "Dog",
             Breed = "Ownership Breed",
             DateOfBirth = DateTime.Now.AddYears(-2),
             Weight = 20.0m,
+            WeightUnit = "lbs",
             Color = "Owned Color",
             MicrochipNumber = "OWN123456789"
         };
@@ -1090,10 +1120,12 @@ public class ComprehensiveModelTests : IDisposable
         var pet = new Pet
         {
             Name = "Primary Pet",
+            Gender = "Male",
             Species = "Cat",
             Breed = "Primary Breed",
             DateOfBirth = DateTime.Now.AddYears(-1),
             Weight = 5.0m,
+            WeightUnit = "lbs",
             Color = "Primary Color",
             MicrochipNumber = "PRI123456789"
         };
@@ -1142,10 +1174,12 @@ public class ComprehensiveModelTests : IDisposable
         var pet = new Pet
         {
             Name = "Navigation Pet",
+            Gender = "Female",
             Species = "Bird",
             Breed = "Navigation Breed",
             DateOfBirth = DateTime.Now.AddMonths(-6),
             Weight = 0.5m,
+            WeightUnit = "lbs",
             Color = "Navigation Color",
             MicrochipNumber = "NAV456789123"
         };
@@ -1213,10 +1247,12 @@ public class ComprehensiveModelTests : IDisposable
         var pet = new Pet
         {
             Name = "Full Test Pet",
+            Gender = "Male",
             Species = "Dog",
             Breed = "Full Test Breed",
             DateOfBirth = DateTime.Now.AddYears(-2),
             Weight = 25.0m,
+            WeightUnit = "lbs",
             Color = "Full Test Color",
             MicrochipNumber = "FULL123456789"
         };
@@ -1335,10 +1371,12 @@ public class ComprehensiveModelTests : IDisposable
         var pet = new Pet
         {
             Name = "Shared Pet",
+            Gender = "Female",
             Species = "Dog",
             Breed = "Shared Breed",
             DateOfBirth = DateTime.Now.AddYears(-3),
             Weight = 30.0m,
+            WeightUnit = "lbs",
             Color = "Shared Color",
             MicrochipNumber = "SHARE123456789"
         };
@@ -1940,10 +1978,12 @@ public class ComprehensiveModelTests : IDisposable
         var pet = new Pet
         {
             Name = "Theme Pet",
+            Gender = "Male",
             Species = "Dog",
             Breed = "Theme Breed",
             DateOfBirth = DateTime.Now.AddYears(-2),
             Weight = 20.0m,
+            WeightUnit = "lbs",
             Color = "Theme Color",
             MicrochipNumber = "THEME123456789"
         };
