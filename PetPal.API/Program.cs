@@ -36,6 +36,7 @@ builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
 // Configure authentication with cookies
 builder.Services.ConfigureApplicationCookie(options =>
 {
+<<<<<<< HEAD
     options.Cookie.Name = "PetPalAuth";
     options.Cookie.HttpOnly = true;
     options.Cookie.Path = "/"; // Explicitly set path
@@ -56,6 +57,10 @@ builder.Services.ConfigureApplicationCookie(options =>
         options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // Require HTTPS in production
     }
 
+    options.LoginPath = "/auth/login";
+    options.LogoutPath = "/auth/logout";
+    options.AccessDeniedPath = "/auth/access-denied";
+    options.ExpireTimeSpan = TimeSpan.FromDays(30);
     options.SlidingExpiration = true;
     options.Cookie.HttpOnly = true;
     options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
