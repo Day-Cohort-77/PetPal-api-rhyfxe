@@ -1,0 +1,2 @@
+# This file ensures the wwwroot directory is tracked by git
+# The wwwroot folder is used for static files in ASP.NET Core applications
