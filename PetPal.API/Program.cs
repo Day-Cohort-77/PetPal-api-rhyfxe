@@ -36,7 +36,7 @@ builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
 // Configure authentication with cookies
 builder.Services.ConfigureApplicationCookie(options =>
 {
-<<<<<<< HEAD
+
     options.Cookie.Name = "PetPalAuth";
     options.Cookie.HttpOnly = true;
     options.Cookie.Path = "/"; // Explicitly set path
