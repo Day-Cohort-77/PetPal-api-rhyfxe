@@ -262,7 +262,7 @@ namespace PetPal.API.Migrations
 
                     b.HasIndex("VeterinarianId");
 
-                    b.ToTable("Appointments");
+                    b.ToTable("Appointments", (string)null);
                 });
 
             modelBuilder.Entity("PetPal.API.Models.HealthRecord", b =>
@@ -310,7 +310,7 @@ namespace PetPal.API.Migrations
 
                     b.HasIndex("VeterinarianId");
 
-                    b.ToTable("HealthRecords");
+                    b.ToTable("HealthRecords", (string)null);
                 });
 
             modelBuilder.Entity("PetPal.API.Models.Medication", b =>
@@ -363,7 +363,7 @@ namespace PetPal.API.Migrations
 
                     b.HasIndex("PetId");
 
-                    b.ToTable("Medications");
+                    b.ToTable("Medications", (string)null);
                 });
 
             modelBuilder.Entity("PetPal.API.Models.Pet", b =>
@@ -410,7 +410,7 @@ namespace PetPal.API.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Pets");
+                    b.ToTable("Pets", (string)null);
                 });
 
             modelBuilder.Entity("PetPal.API.Models.PetOwner", b =>
@@ -439,9 +439,10 @@ namespace PetPal.API.Migrations
 
                     b.HasIndex("UserProfileId");
 
-                    b.ToTable("PetOwners");
+                    b.ToTable("PetOwners", (string)null);
                 });
-modelBuilder.Entity("PetPal.API.Models.TrainingProgress", b =>
+
+            modelBuilder.Entity("PetPal.API.Models.TrainingProgress", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -505,48 +506,7 @@ modelBuilder.Entity("PetPal.API.Models.TrainingProgress", b =>
 
                     b.HasIndex("PetId");
 
-                    b.ToTable("TrainingProgress");
-                });
-
-
-            modelBuilder.Entity("PetPal.API.Models.ThemePreferences", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-
-                    b.Property<string>("AccentColor")
-                        .HasColumnType("text");
-
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-
-                    b.Property<string>("FontSize")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Theme")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<bool>("UseSystemPreference")
-                        .HasColumnType("boolean");
-
-                    b.Property<int>("UserProfileId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserProfileId")
-                        .IsUnique();
-
-                    b.ToTable("ThemePreferences");
+                    b.ToTable("TrainingProgress", (string)null);
                 });
 
             modelBuilder.Entity("PetPal.API.Models.UserProfile", b =>
@@ -590,7 +550,7 @@ modelBuilder.Entity("PetPal.API.Models.TrainingProgress", b =>
 
                     b.HasIndex("IdentityUserId");
 
-                    b.ToTable("UserProfiles");
+                    b.ToTable("UserProfiles", (string)null);
                 });
 
             modelBuilder.Entity("PetPal.API.Models.Veterinarian", b =>
@@ -641,7 +601,7 @@ modelBuilder.Entity("PetPal.API.Models.TrainingProgress", b =>
 
                     b.HasKey("Id");
 
-                    b.ToTable("Veterinarians");
+                    b.ToTable("Veterinarians", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -771,17 +731,6 @@ modelBuilder.Entity("PetPal.API.Models.TrainingProgress", b =>
                         .IsRequired();
 
                     b.Navigation("Pet");
-                                    });
-
-            modelBuilder.Entity("PetPal.API.Models.ThemePreferences", b =>
-                {
-                    b.HasOne("PetPal.API.Models.UserProfile", "UserProfile")
-                        .WithOne("ThemePreferences")
-                        .HasForeignKey("PetPal.API.Models.ThemePreferences", "UserProfileId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("UserProfile");
                 });
 
             modelBuilder.Entity("PetPal.API.Models.UserProfile", b =>
@@ -819,7 +768,7 @@ modelBuilder.Entity("PetPal.API.Models.TrainingProgress", b =>
 
                             b1.HasKey("UserProfileId");
 
-                            b1.ToTable("UserProfiles");
+                            b1.ToTable("UserProfiles", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("UserProfileId");
@@ -847,8 +796,6 @@ modelBuilder.Entity("PetPal.API.Models.TrainingProgress", b =>
             modelBuilder.Entity("PetPal.API.Models.UserProfile", b =>
                 {
                     b.Navigation("OwnedPets");
-
-                    b.Navigation("ThemePreferences");
                 });
 #pragma warning restore 612, 618
         }
