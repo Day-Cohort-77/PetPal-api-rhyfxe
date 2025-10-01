@@ -312,44 +312,27 @@ public static class MedicationReminderEndpoints
     {
         try
         {
-            Console.WriteLine($"[DEBUG] LogMedicationAdministration called with: MedicationId={request.MedicationId}, PetId={request.PetId}, ReminderId={request.ReminderId}, Status={request.Status}");
-            
             var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (userId == null)
-            {
-                Console.WriteLine("[DEBUG] User not authenticated");
                 return Results.Unauthorized();
-            }
-            
-            Console.WriteLine($"[DEBUG] User authenticated: {userId}");
 
             var userProfile = await context.UserProfiles
                 .Include(up => up.OwnedPets)
                 .FirstOrDefaultAsync(up => up.IdentityUserId == userId);
 
-            Console.WriteLine($"[DEBUG] UserProfile found: {userProfile?.Id}, Pets count: {userProfile?.OwnedPets?.Count}");
-
             // Check if user has access to this pet (owner or medical care provider)
             if (!AuthorizationHelper.CanAccessPetData(user, userProfile, request.PetId))
             {
-                Console.WriteLine($"[DEBUG] User does not have access to pet {request.PetId}");
                 return Results.Problem("You do not have permission to access this pet's medication data", statusCode: 403);
             }
-            
-            Console.WriteLine("[DEBUG] User has access to pet");
 
             // Verify medication exists
             var medication = await context.Medications
                 .Include(m => m.Pet)
                 .FirstOrDefaultAsync(m => m.Id == request.MedicationId && m.PetId == request.PetId);
 
-            Console.WriteLine($"[DEBUG] Medication found: {medication?.Id} - {medication?.Name}");
-
             if (medication == null)
-            {
-                Console.WriteLine($"[DEBUG] Medication not found for ID {request.MedicationId} and PetId {request.PetId}");
                 return Results.NotFound("Medication not found");
-            }
 
             // Verify reminder exists if provided
             MedicationReminder? reminder = null;
@@ -357,13 +340,9 @@ public static class MedicationReminderEndpoints
             {
                 reminder = await context.MedicationReminders
                     .FirstOrDefaultAsync(mr => mr.Id == request.ReminderId.Value);
-                Console.WriteLine($"[DEBUG] Reminder lookup for ID {request.ReminderId.Value}: {(reminder != null ? "Found" : "Not found")}");
             }
 
-            Console.WriteLine($"[DEBUG] Attempting to map DTO to entity. Status: {request.Status}");
             var log = mapper.Map<MedicationAdministrationLog>(request);
-            Console.WriteLine($"[DEBUG] Mapped entity Status: {log.Status}");
-            
             log.Medication = medication;
             log.Pet = medication.Pet;
             log.Reminder = reminder;
@@ -371,16 +350,11 @@ public static class MedicationReminderEndpoints
             if (reminder == null)
             {
                 log.ReminderId = null;
-                Console.WriteLine("[DEBUG] Setting ReminderId to null since reminder doesn't exist");
             }
             log.LoggedAt = DateTime.UtcNow;
 
-            Console.WriteLine("[DEBUG] Adding log to context");
             context.MedicationAdministrationLogs.Add(log);
-            
-            Console.WriteLine("[DEBUG] Saving changes");
             await context.SaveChangesAsync();
-            Console.WriteLine("[DEBUG] Changes saved successfully");
 
             var logDto = mapper.Map<MedicationAdministrationLogDto>(log);
             var response = new LogMedicationAdministrationResponseDto
@@ -394,8 +368,6 @@ public static class MedicationReminderEndpoints
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[DEBUG] Exception occurred: {ex.Message}");
-            Console.WriteLine($"[DEBUG] Stack trace: {ex.StackTrace}");
             return Results.Problem($"An error occurred: {ex.Message}");
         }
     }
