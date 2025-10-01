@@ -141,7 +141,8 @@ app.MapVaccinationRecordEndpoints();
 app.MapTrainingProgressEndpoints();
 app.MapSettingsEndpoints();
 app.MapAppointmentEndpoints();
-app.MapMedicationEndpoints(); 
+app.MapMedicationEndpoints();
+app.MapMedicationReminderEndpoints();
 // app.MapVeterinarianEndpoints();
 
 app.Run();

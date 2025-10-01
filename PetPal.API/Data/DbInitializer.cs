@@ -187,6 +187,15 @@ public static class DbInitializer
             // Seed medications
             await SeedSampleMedications(context, pets, veterinarians);
         }
+
+        // Always check and seed medication reminders if they don't exist
+        var hasReminders = await context.MedicationReminders.AnyAsync();
+        if (!hasReminders)
+        {
+            // Get existing medications for reminder seeding
+            var medications = await context.Medications.Include(m => m.Pet).ToListAsync();
+            await SeedSampleMedicationReminders(context, medications);
+        }
     }
 
     private static async Task<List<Veterinarian>> SeedSampleVeterinarians(PetPalDbContext context, UserManager<IdentityUser> userManager)
@@ -1478,5 +1487,152 @@ public static class DbInitializer
 
         context.VaccinationRecords.AddRange(vaccinationRecords);
         await context.SaveChangesAsync();
+    }
+
+    private static async Task SeedSampleMedicationReminders(PetPalDbContext context, List<Medication> medications)
+    {
+        if (medications.Count == 0)
+        {
+            return;
+        }
+
+        var reminders = new List<MedicationReminder>();
+
+        foreach (var medication in medications.Where(m => m.IsActive))
+        {
+            // Create reminders based on frequency
+            switch (medication.Frequency?.ToLower())
+            {
+                case "daily":
+                case "once daily":
+                    reminders.Add(new MedicationReminder
+                    {
+                        MedicationId = medication.Id,
+                        PetId = medication.PetId,
+                        ReminderTime = TimeOnly.FromTimeSpan(new TimeSpan(8, 0, 0)), // 8:00 AM
+                        IsEnabled = true,
+                        NotificationMethods = new List<string> { "app", "email" },
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    });
+                    break;
+
+                case "twice daily":
+                case "twice a day":
+                    reminders.AddRange(new List<MedicationReminder>
+                    {
+                        new MedicationReminder
+                        {
+                            MedicationId = medication.Id,
+                            PetId = medication.PetId,
+                            ReminderTime = TimeOnly.FromTimeSpan(new TimeSpan(8, 0, 0)), // 8:00 AM
+                            IsEnabled = true,
+                            NotificationMethods = new List<string> { "app", "email" },
+                            CreatedAt = DateTime.UtcNow,
+                            UpdatedAt = DateTime.UtcNow
+                        },
+                        new MedicationReminder
+                        {
+                            MedicationId = medication.Id,
+                            PetId = medication.PetId,
+                            ReminderTime = TimeOnly.FromTimeSpan(new TimeSpan(20, 0, 0)), // 8:00 PM
+                            IsEnabled = true,
+                            NotificationMethods = new List<string> { "app", "email" },
+                            CreatedAt = DateTime.UtcNow,
+                            UpdatedAt = DateTime.UtcNow
+                        }
+                    });
+                    break;
+
+                case "three times daily":
+                case "three times a day":
+                    reminders.AddRange(new List<MedicationReminder>
+                    {
+                        new MedicationReminder
+                        {
+                            MedicationId = medication.Id,
+                            PetId = medication.PetId,
+                            ReminderTime = TimeOnly.FromTimeSpan(new TimeSpan(8, 0, 0)), // 8:00 AM
+                            IsEnabled = true,
+                            NotificationMethods = new List<string> { "app", "email" },
+                            CreatedAt = DateTime.UtcNow,
+                            UpdatedAt = DateTime.UtcNow
+                        },
+                        new MedicationReminder
+                        {
+                            MedicationId = medication.Id,
+                            PetId = medication.PetId,
+                            ReminderTime = TimeOnly.FromTimeSpan(new TimeSpan(14, 0, 0)), // 2:00 PM
+                            IsEnabled = true,
+                            NotificationMethods = new List<string> { "app", "email" },
+                            CreatedAt = DateTime.UtcNow,
+                            UpdatedAt = DateTime.UtcNow
+                        },
+                        new MedicationReminder
+                        {
+                            MedicationId = medication.Id,
+                            PetId = medication.PetId,
+                            ReminderTime = TimeOnly.FromTimeSpan(new TimeSpan(20, 0, 0)), // 8:00 PM
+                            IsEnabled = true,
+                            NotificationMethods = new List<string> { "app", "email" },
+                            CreatedAt = DateTime.UtcNow,
+                            UpdatedAt = DateTime.UtcNow
+                        }
+                    });
+                    break;
+
+                case "monthly":
+                    // Monthly reminders on the 1st of each month at 9:00 AM
+                    reminders.Add(new MedicationReminder
+                    {
+                        MedicationId = medication.Id,
+                        PetId = medication.PetId,
+                        ReminderTime = TimeOnly.FromTimeSpan(new TimeSpan(9, 0, 0)), // 9:00 AM
+                        IsEnabled = true,
+                        NotificationMethods = new List<string> { "app", "email", "sms" },
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    });
+                    break;
+
+                case "every 3 months":
+                    // Quarterly reminders at 10:00 AM
+                    reminders.Add(new MedicationReminder
+                    {
+                        MedicationId = medication.Id,
+                        PetId = medication.PetId,
+                        ReminderTime = TimeOnly.FromTimeSpan(new TimeSpan(10, 0, 0)), // 10:00 AM
+                        IsEnabled = true,
+                        NotificationMethods = new List<string> { "app", "email" },
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    });
+                    break;
+
+                case "as needed":
+                    // No automatic reminders for as-needed medications
+                    break;
+
+                default:
+                    // Default reminder for unknown frequencies - once daily at 8:00 AM
+                    reminders.Add(new MedicationReminder
+                    {
+                        MedicationId = medication.Id,
+                        PetId = medication.PetId,
+                        ReminderTime = TimeOnly.FromTimeSpan(new TimeSpan(8, 0, 0)), // 8:00 AM
+                        IsEnabled = true,
+                        NotificationMethods = new List<string> { "app" },
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    });
+                    break;
+            }
+        }
+
+        if (reminders.Any())
+        {
+            context.MedicationReminders.AddRange(reminders);
+            await context.SaveChangesAsync();
+        }
     }
 }

@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using PetPal.API.Data;
@@ -11,9 +12,11 @@ using PetPal.API.Data;
 namespace PetPal.API.Migrations
 {
     [DbContext(typeof(PetPalDbContext))]
-    partial class PetPalDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251001144842_AddMedicationReminders")]
+    partial class AddMedicationReminders
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -669,74 +672,6 @@ namespace PetPal.API.Migrations
                     b.ToTable("UserProfiles");
                 });
 
-            modelBuilder.Entity("PetPal.API.Models.VaccinationRecord", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("AdministeredBy")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.Property<DateTime>("AdministrationDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Attachments")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime?>("ExpirationDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Location")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.Property<string>("LotNumber")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<string>("Notes")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int>("PetId")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("VaccineName")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.Property<string>("VaccineType")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<int?>("VeterinarianId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("PetId");
-
-                    b.HasIndex("VeterinarianId");
-
-                    b.ToTable("VaccinationRecords");
-                });
-
             modelBuilder.Entity("PetPal.API.Models.Veterinarian", b =>
                 {
                     b.Property<int>("Id")
@@ -1030,24 +965,6 @@ namespace PetPal.API.Migrations
             modelBuilder.Entity("PetPal.API.Models.MedicationReminder", b =>
                 {
                     b.Navigation("AdministrationLogs");
-                });
-
-            modelBuilder.Entity("PetPal.API.Models.VaccinationRecord", b =>
-                {
-                    b.HasOne("PetPal.API.Models.Pet", "Pet")
-                        .WithMany()
-                        .HasForeignKey("PetId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("PetPal.API.Models.Veterinarian", "Veterinarian")
-                        .WithMany()
-                        .HasForeignKey("VeterinarianId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("Pet");
-
-                    b.Navigation("Veterinarian");
                 });
 
             modelBuilder.Entity("PetPal.API.Models.Pet", b =>
