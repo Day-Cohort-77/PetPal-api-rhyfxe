@@ -6,6 +6,11 @@
 # dotenv files
 .env
 
+# security - cookies and auth tokens
+*cookies*.txt
+*.cookie
+*_cookies.txt
+
 # User-specific files
 *.rsuser
 *.suo
