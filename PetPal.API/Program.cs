@@ -36,24 +36,10 @@ builder.Services.ConfigureApplicationCookie(options =>
 {
     options.Cookie.Name = "PetPalAuth";
     options.Cookie.HttpOnly = true;
-    options.Cookie.Path = "/"; // Explicitly set path
+    options.Cookie.Path = "/";
+    options.Cookie.SameSite = SameSiteMode.Lax;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
     options.ExpireTimeSpan = TimeSpan.FromHours(8);
-
-    if (builder.Environment.IsDevelopment())
-    {
-        // For localhost development, use SameSite=Lax which works with HTTP
-        // SameSite=None requires Secure=true (HTTPS), but we're using HTTP localhost
-        options.Cookie.SameSite = SameSiteMode.Lax; // FIXED: Changed from None to Lax
-        options.Cookie.SecurePolicy = CookieSecurePolicy.None; // Allow HTTP in development
-        options.Cookie.Domain = null; // Don't set domain for localhost
-    }
-    else
-    {
-        // Production settings
-        options.Cookie.SameSite = SameSiteMode.None; // Required for cross-origin requests
-        options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // Require HTTPS in production
-    }
-
     options.SlidingExpiration = true;
 
     // Prevent redirects - return status codes instead
@@ -85,27 +71,13 @@ builder.Services.AddAuthorization(options =>
 // Configure CORS
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowLocalhost", policy =>
+    options.AddPolicy("DefaultCorsPolicy", policy =>
     {
-        policy.WithOrigins("http://localhost:3000", "http://localhost:5173") // React and Vite default ports
+        policy.WithOrigins("http://localhost:3000", "http://localhost:5173", "https://localhost:3000", "https://localhost:5173")
               .AllowAnyHeader()
               .AllowAnyMethod()
-              .AllowCredentials() // Allow credentials (cookies)
-              .SetPreflightMaxAge(TimeSpan.FromMinutes(10)) // Cache preflight requests
-              .WithExposedHeaders("Set-Cookie"); // Ensure Set-Cookie header is exposed
-    });
-    
-    // Add development-specific CORS policy for more permissive settings
-    options.AddPolicy("DevelopmentCors", policy =>
-    {
-        if (builder.Environment.IsDevelopment())
-        {
-            policy.SetIsOriginAllowed(_ => true) // Allow any origin in development
-                  .AllowAnyHeader()
-                  .AllowAnyMethod()
-                  .AllowCredentials()
-                  .WithExposedHeaders("Set-Cookie");
-        }
+              .AllowCredentials()
+              .SetPreflightMaxAge(TimeSpan.FromMinutes(10));
     });
 });
 
@@ -151,45 +123,10 @@ if (app.Environment.IsDevelopment())
 }
 
 // Use CORS middleware BEFORE authentication
-if (app.Environment.IsDevelopment())
-{
-    app.UseCors("DevelopmentCors"); // More permissive in development
-}
-else
-{
-    app.UseCors("AllowLocalhost"); // Strict policy in production
-}
+app.UseCors("DefaultCorsPolicy");
 
 // Add authentication middleware
 app.UseAuthentication();
-
-// Add debugging middleware for cookie issues (development only)
-if (app.Environment.IsDevelopment())
-{
-    app.Use(async (context, next) =>
-    {
-        var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
-        
-        // Log incoming cookies
-        if (context.Request.Headers.ContainsKey("Cookie"))
-        {
-            logger.LogInformation("Incoming cookies: {Cookies}", context.Request.Headers["Cookie"].ToString());
-        }
-        
-        // Log if user is authenticated
-        logger.LogInformation("User authenticated: {IsAuthenticated}, User: {UserName}", 
-            context.User.Identity?.IsAuthenticated ?? false, 
-            context.User.Identity?.Name ?? "Anonymous");
-        
-        await next();
-        
-        // Log outgoing Set-Cookie headers
-        if (context.Response.Headers.ContainsKey("Set-Cookie"))
-        {
-            logger.LogInformation("Setting cookies: {SetCookie}", string.Join("; ", context.Response.Headers["Set-Cookie"]));
-        }
-    });
-}
 
 app.UseAuthorization();
 
