@@ -64,7 +64,7 @@ public class MedicationReminderTests : IDisposable
             Breed = "Golden Retriever",
             DateOfBirth = DateTime.UtcNow.AddYears(-3),
             Color = "Golden",
-            Weight = 65.5,
+            Weight = 65.5M,
             MicrochipNumber = "123456789012345"
         };
 
@@ -171,7 +171,7 @@ public class MedicationReminderTests : IDisposable
             Breed = "Golden Retriever",
             DateOfBirth = DateTime.UtcNow.AddYears(-3),
             Color = "Golden",
-            Weight = 65.5,
+            Weight = 65.5M,
             MicrochipNumber = "123456789012345"
         };
 
@@ -271,7 +271,7 @@ public class MedicationReminderTests : IDisposable
             Breed = "Golden Retriever",
             DateOfBirth = DateTime.UtcNow.AddYears(-3),
             Color = "Golden",
-            Weight = 65.5,
+            Weight = 65.5M,
             MicrochipNumber = "123456789012345"
         };
 
