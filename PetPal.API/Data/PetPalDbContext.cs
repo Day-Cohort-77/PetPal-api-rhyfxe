@@ -14,6 +14,7 @@ public class PetPalDbContext : IdentityDbContext<IdentityUser>
     public DbSet<Pet> Pets { get; set; }
     public DbSet<PetOwner> PetOwners { get; set; }
     public DbSet<HealthRecord> HealthRecords { get; set; }
+    public DbSet<VaccinationRecord> VaccinationRecords { get; set; }
     public DbSet<Appointment> Appointments { get; set; }
     public DbSet<Medication> Medications { get; set; }
     public DbSet<Veterinarian> Veterinarians { get; set; }
@@ -94,6 +95,41 @@ public class PetPalDbContext : IdentityDbContext<IdentityUser>
             .WithMany(p => p.TrainingProgress)
             .HasForeignKey(tp => tp.PetId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // Configure VaccinationRecord relationships
+        modelBuilder.Entity<VaccinationRecord>()
+            .HasOne(vr => vr.Pet)
+            .WithMany()
+            .HasForeignKey(vr => vr.PetId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<VaccinationRecord>()
+            .HasOne(vr => vr.Veterinarian)
+            .WithMany()
+            .HasForeignKey(vr => vr.VeterinarianId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        // Configure required fields for VaccinationRecord
+        modelBuilder.Entity<VaccinationRecord>()
+            .Property(vr => vr.VaccineName)
+            .IsRequired()
+            .HasMaxLength(200);
+
+        modelBuilder.Entity<VaccinationRecord>()
+            .Property(vr => vr.VaccineType)
+            .HasMaxLength(100);
+
+        modelBuilder.Entity<VaccinationRecord>()
+            .Property(vr => vr.LotNumber)
+            .HasMaxLength(50);
+
+        modelBuilder.Entity<VaccinationRecord>()
+            .Property(vr => vr.AdministeredBy)
+            .HasMaxLength(200);
+
+        modelBuilder.Entity<VaccinationRecord>()
+            .Property(vr => vr.Location)
+            .HasMaxLength(200);
 
         // Explicitly ignore Address as a standalone entity
         modelBuilder.Ignore<Address>();

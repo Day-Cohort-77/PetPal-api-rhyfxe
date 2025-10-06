@@ -137,6 +137,7 @@ app.MapGet("/", () => "PetPal API is running!");
 app.MapAuthEndpoints();
 app.MapPetEndpoints();
 app.MapHealthRecordEndpoints();
+app.MapVaccinationRecordEndpoints();
 app.MapTrainingProgressEndpoints();
 app.MapSettingsEndpoints();
 app.MapAppointmentEndpoints();

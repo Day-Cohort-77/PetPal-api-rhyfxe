@@ -168,6 +168,7 @@ public static class DbInitializer
 
             // Seed health records
             await SeedSampleHealthRecords(context, pets, veterinarians);
+            await SeedSampleVaccinationRecords(context, pets, veterinarians);
 
             // Seed appointments
             await SeedSampleAppointments(context, pets, veterinarians);
@@ -1386,6 +1387,96 @@ public static class DbInitializer
         }
 
         context.Medications.AddRange(medications);
+        await context.SaveChangesAsync();
+    }
+
+    private static async Task SeedSampleVaccinationRecords(PetPalDbContext context, List<Pet> pets, List<Veterinarian> veterinarians)
+    {
+        if (context.VaccinationRecords.Any() || pets.Count == 0 || veterinarians.Count == 0)
+        {
+            return;
+        }
+
+        var vaccinationRecords = new List<VaccinationRecord>();
+
+        // Sample vaccination records for first pet
+        if (pets.Count >= 1 && veterinarians.Count >= 1)
+        {
+            vaccinationRecords.AddRange(new List<VaccinationRecord>
+            {
+                new VaccinationRecord
+                {
+                    PetId = pets[0].Id,
+                    VaccineName = "Rabies Vaccination",
+                    VaccineType = "Rabies",
+                    AdministrationDate = DateTime.Now.AddMonths(-6),
+                    ExpirationDate = DateTime.Now.AddYears(3),
+                    LotNumber = "RB2024-001",
+                    AdministeredBy = "Dr. Johnson",
+                    Location = "Main Clinic - Room 1",
+                    VeterinarianId = veterinarians[0].Id,
+                    Notes = "Annual rabies vaccination completed successfully. No adverse reactions observed.",
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                },
+                new VaccinationRecord
+                {
+                    PetId = pets[0].Id,
+                    VaccineName = "DHPP (Distemper, Hepatitis, Parvovirus, Parainfluenza)",
+                    VaccineType = "DHPP",
+                    AdministrationDate = DateTime.Now.AddMonths(-6),
+                    ExpirationDate = DateTime.Now.AddYears(1),
+                    LotNumber = "DH2024-005",
+                    AdministeredBy = "Dr. Johnson",
+                    Location = "Main Clinic - Room 1",
+                    VeterinarianId = veterinarians[0].Id,
+                    Notes = "Core vaccine series completed. Booster required in 12 months.",
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                }
+            });
+        }
+
+        // Sample vaccination records for TestPet (for frontend testing)
+        if (pets.Count > 5) // TestPet should be the last pet
+        {
+            var testPetId = pets.Last().Id;
+            vaccinationRecords.AddRange(new List<VaccinationRecord>
+            {
+                new VaccinationRecord
+                {
+                    PetId = testPetId,
+                    VaccineName = "Rabies Vaccination",
+                    VaccineType = "Rabies",
+                    AdministrationDate = DateTime.Now.AddMonths(-12),
+                    ExpirationDate = DateTime.Now.AddMonths(24),
+                    LotNumber = "RB2025-10-344821",
+                    AdministeredBy = "Dr. Sarah Johnson",
+                    Location = "PetPal Veterinary Clinic - Exam Room 2",
+                    VeterinarianId = veterinarians[0].Id,
+                    Notes = "Annual rabies vaccination administered successfully. No adverse reactions observed during 15-minute observation period. Patient tolerated injection well. Next rabies vaccination due October 6, 2028. Vaccination certificate provided to owner.",
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                },
+                new VaccinationRecord
+                {
+                    PetId = testPetId,
+                    VaccineName = "Bordetella (Kennel Cough)",
+                    VaccineType = "Bordetella",
+                    AdministrationDate = DateTime.Now.AddMonths(-6),
+                    ExpirationDate = DateTime.Now.AddMonths(6),
+                    LotNumber = "BK2025-067",
+                    AdministeredBy = "Dr. Mike Wilson",
+                    Location = "Emergency Clinic",
+                    VeterinarianId = veterinarians[1].Id,
+                    Notes = "Intranasal vaccine administered. Annual booster recommended for dogs with high exposure risk.",
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                }
+            });
+        }
+
+        context.VaccinationRecords.AddRange(vaccinationRecords);
         await context.SaveChangesAsync();
     }
 }
