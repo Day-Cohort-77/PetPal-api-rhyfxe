@@ -1,3 +1,5 @@
+````instructions
+````instructions
 <!--
 This file is intended to help AI coding agents (and their human reviewers)
 get productive quickly in this repository. It highlights the big-picture
@@ -9,124 +11,148 @@ Keep this file focused and short — prefer adding a small note and a
 precise file path rather than repeating large blocks of code.
 -->
 
-# Copilot / AI agent instructions — PetPal API
+# Copilot / AI agent instructions — PetPal Full-Stack
 
 Purpose: give an AI code assistant the essential context needed to make
-safe, useful edits in this repo (server + client workspace). If you are
-making changes to code, prefer small, testable edits and run the
+safe, useful edits in this full-stack pet management system (API + Client).
+If you are making changes to code, prefer small, testable edits and run the
 build/tests described below.
 
 ## High-level architecture (big picture)
 
-- Backend: ASP.NET Core Minimal API (net8.0). The program entry is
-  `PetPal.API/Program.cs` which wires services and maps endpoints.
-- API style: Minimal API with endpoint mapping extension methods under
-  `PetPal.API/Endpoints/*` (each `MapXxxEndpoints` extension groups
-  related routes). Prefer adding new endpoints in that folder and
-  following the existing extension-pattern.
-- Data layer: EF Core (PostgreSQL provider `Npgsql`) with `PetPalDbContext`
-  at `PetPal.API/Data/PetPalDbContext.cs`. Models live in
-  `PetPal.API/Models/` and DTOs in `PetPal.API/DTOs/`.
-- Auth: ASP.NET Identity backed by `PetPalDbContext`. Cookie
-  authentication is used (configured in `Program.cs`). Roles seeded:
-  `Admin`, `User`, `Veterinarian`.
-- Object mapping: AutoMapper configured in `Program.cs` and mapping
-  profiles live in `PetPal.API/Helpers/MappingProfiles.cs`.
-- DB initialization & seeding: `PetPal.API/Data/DbInitializer.cs`.
-  Program calls `DbInitializer.Initialize(...)` at startup which runs
-  `context.Database.Migrate()` and seeds roles/users/sample data.
+**Full-Stack Structure**: This workspace contains both backend (`PetPal-api-rhyfxe/`) 
+and frontend (`PetPal-client-rhyfxe/`) as sibling directories.
 
-Why some structural decisions exist
-- Minimal API keeps controllers light and groups related routes as
-  extension methods. This simplifies small feature additions but means
-  routing logic and authorization checks sit near the route handlers.
-- `Address` is modelled as an owned type on `UserProfile` (not a table)
-  — see `OnModelCreating` in `PetPalDbContext`. This affects migrations
-  and queries (no DbSet<Address>).
-- All DateTime properties are converted to UTC in `OnModelCreating`
-  using a ValueConverter. When creating/updating timestamps respect UTC.
+**Backend**: ASP.NET Core Minimal API (net8.0). Entry point is `PetPal.API/Program.cs` 
+which wires services, maps endpoints, and handles sophisticated cookie-based auth 
+with environment-specific CORS policies.
 
-## Important files and where to look first
-- `PetPal.API/Program.cs` — DI, auth, CORS, JSON options, calls to map
-  endpoints and DB initialization.
-- `PetPal.API/Data/PetPalDbContext.cs` — EF Core model configuration
-  (relationships, owned types, UTC conversion).
-- `PetPal.API/Data/DbInitializer.cs` — migrations + seeding logic.
-- `PetPal.API/Endpoints/*.cs` — endpoint implementations. Follow the
-  `MapXxxEndpoints` pattern when adding routes.
-- `PetPal.API/DTOs/` and `PetPal.API/Models/` — DTO and domain shapes.
-- `PetPal.API/Helpers/MappingProfiles.cs` — AutoMapper mappings.
-- `Migrations/` — existing EF migrations; `DbInitializer` runs
-  `context.Database.Migrate()` automatically on startup.
+**Frontend**: Next.js 15 React app with Radix UI themes, TanStack Query for state 
+management, and React Hook Form for form handling. Client uses cookie-based auth 
+that integrates seamlessly with the backend.
 
-## Developer workflows (quick commands)
+**API Style**: Minimal API with endpoint mapping extensions in `PetPal.API/Endpoints/*` 
+(each `MapXxxEndpoints` groups related routes). Follow this pattern when adding endpoints.
 
-Notes: your shell is `bash.exe` on Windows. Commands below assume you
-run them from repo root `PetPal-api-rhyfxe`.
+**Data Architecture**: EF Core with PostgreSQL. Complex ownership model where pets can 
+have multiple owners via `PetOwner` join entity with `IsPrimaryOwner` flag. All DateTime 
+properties auto-convert to UTC via `OnModelCreating` ValueConverter.
 
-Set user secrets (one-time per machine/project):
+**Auth Flow**: ASP.NET Identity with simple cookie auth (SameSite=Lax, SecurePolicy=SameAsRequest). 
+Three roles: `Admin`, `User`, `Veterinarian`.
+
+**Cross-Component Communication**: Client services in `src/services/` mirror API endpoints. 
+AuthContext provides app-wide auth state. API uses AutoMapper for DTO transformations.**Why Key Architectural Decisions Exist**:
+- **Minimal API Pattern**: Keeps endpoints focused and testable. Authorization 
+  logic lives in endpoint handlers, not separate controllers.
+- **Pet Ownership Model**: `PetOwner` join entity supports multiple owners per 
+  pet with primary/secondary distinction — critical for family pet management.
+- **Address as Owned Type**: `Address` is owned by `UserProfile` (not separate table). 
+  No `DbSet<Address>` — see `OnModelCreating` in `PetPalDbContext`.
+- **UTC Enforcement**: All DateTime properties auto-convert to UTC via ValueConverter. 
+  Always work with UTC dates.
+- **Simple Cookie Auth**: Single policy with SameSite=Lax and SecurePolicy=SameAsRequest 
+  works for both HTTP and HTTPS without environment complexity.
+
+## Important files — start here
+
+**Backend Core**:
+- `PetPal.API/Program.cs` — DI container, sophisticated CORS policies, cookie 
+  auth config, endpoint mapping, auto-migration on startup
+- `PetPal.API/Data/PetPalDbContext.cs` — Complex relationships, owned types, 
+  UTC DateTime converter, pet ownership model
+- `PetPal.API/Endpoints/*.cs` — Follow `MapXxxEndpoints` extension pattern. 
+  See `AuthEndpoints.cs` for user claim patterns, `PetEndpoints.cs` for 
+  ownership checks
+- `PetPal.API/Helpers/MappingProfiles.cs` — AutoMapper config with computed 
+  properties (owner names, pet names in DTOs)
+
+**Frontend Core**:
+- `PetPal-client-rhyfxe/src/contexts/AuthContext.js` — App-wide auth state, 
+  role-based access control, session restoration
+- `PetPal-client-rhyfxe/src/services/` — API service layer mirrors backend 
+  endpoints. Check `apiService.js` for cookie handling patterns
+- `PetPal-client-rhyfxe/package.json` — Next.js 15, TanStack Query, Radix UI
+
+**Data Layer**:
+- `PetPal.API/Models/` and `PetPal.API/DTOs/` — Domain vs transfer objects
+- `Migrations/` — Auto-applied on startup via `DbInitializer.Initialize()`
+
+## Developer workflows (essential commands)
+
+**Backend Setup** (from `PetPal-api-rhyfxe/`):
 ```bash
+# One-time DB setup
 cd PetPal.API
 dotnet user-secrets init --project PetPal.API.csproj
-dotnet user-secrets set 'ConnectionStrings:PetPalDbConnectionString' 'Host=localhost;Port=5432;Username=postgres;Password=your_password;Database=PetPal' --project PetPal.API.csproj
+dotnet user-secrets set 'ConnectionStrings:PetPalDbConnectionString' 'Host=localhost;Port=5432;Username=postgres;Password=your_password;Database=PetPal'
+
+# Run backend (auto-migrates DB)
+dotnet run  # Runs on http://localhost:5000
 ```
 
-Apply migrations (you can also start the app; startup runs migrations):
+**Frontend Setup** (from `PetPal-client-rhyfxe/`):
 ```bash
-cd PetPal.API
-dotnet ef database update --project PetPal.API.csproj
+npm install
+npm run dev  # Runs on http://localhost:3000 with Turbopack
 ```
 
-Run the API locally:
+**Full-Stack Testing**:
 ```bash
-cd PetPal.API
-dotnet run
-# or run from the solution with an IDE's debug launcher
-```
-
-Run tests (all projects):
-```bash
+# Backend tests (from PetPal-api-rhyfxe/)
 dotnet test
 dotnet test --collect:"XPlat Code Coverage"
-# run only server tests (if needed)
-dotnet test PetPal.Tests/PetPal.Tests.csproj
+
+# Frontend linting (from PetPal-client-rhyfxe/)
+npm run lint
 ```
 
-Notes on local HTTPS / cookies: the app configures cookies with
-SameSite=None and SecurePolicy=Always. That requires the client to use
-HTTPS for cookies to be honored. Either run the API with HTTPS or
-adjust cookie settings when developing locally (quick temporary change
-— but document it in PRs).
+**Cookie Auth Notes**: Simple configuration uses SameSite=Lax and SecurePolicy=SameAsRequest 
+for all environments. CORS allows localhost:3000 and localhost:5173 (both HTTP and HTTPS).
 
-## Project-specific conventions & patterns
+## Project-specific patterns (follow these)
 
-- Endpoint pattern: create an extension static class with
-  `public static void MapXxxEndpoints(this WebApplication app)` and call
-  it from `Program.cs` (e.g. `app.MapPetEndpoints()`). Keep each file
-  focused on one resource area.
-- Authorization: endpoints often call `ClaimsPrincipal user` to find
-  `ClaimTypes.NameIdentifier`, then load the `UserProfile` by
-  `IdentityUserId`. Follow the same pattern to check ownership.
-- Pet ownership: `PetOwner` is a join entity with `IsPrimaryOwner`.
-  Many handlers check primary ownership before allowing updates/deletes.
-- EF Include patterns: code uses `.Include(...).ThenInclude(...)` and
-  sometimes `Where` inside `Include` (e.g. `Owners.Where(o => o.PetId == o.Pet.Id)`).
-  Keep queries consistent with the existing style when modifying.
-- UTC times: always store and compare DateTime values as UTC. The
-  DbContext enforces UTC conversion for DateTime properties.
+**Backend Patterns**:
+- **Endpoint Extensions**: Create `public static void MapXxxEndpoints(this WebApplication app)` 
+  in `Endpoints/` and register in `Program.cs`. One resource per file.
+- **Auth Claims**: Get user via `ClaimsPrincipal.FindFirstValue(ClaimTypes.NameIdentifier)`, 
+  then load `UserProfile` by `IdentityUserId`. See `PetEndpoints.cs` examples.
+- **Ownership Checks**: Most pet operations verify `IsPrimaryOwner` or any ownership 
+  via `PetOwner` join table before allowing modifications.
+- **EF Query Style**: Use `.Include().ThenInclude()` with conditional includes like 
+  `Owners.Where(o => o.PetId == o.Pet.Id)`. Match existing query patterns.
+- **DTO Mapping**: AutoMapper handles Model↔DTO with computed properties. Update 
+  `MappingProfiles.cs` when changing shapes.
 
-## Integration points & external dependencies
+**Frontend Patterns**:
+- **Service Layer**: Each API resource has a service file in `src/services/` 
+  (e.g., `petService.js`, `authService.js`). These handle API calls and error handling.
+- **Auth Flow**: `AuthContext` provides `user`, `login()`, `logout()`, and 
+  role-checking functions. Components consume via `useAuth()`.
+- **State Management**: TanStack Query for server state, React Context for auth/global state.
+- **Form Handling**: React Hook Form for forms with validation patterns.
 
-- PostgreSQL via Npgsql (NuGet package `Npgsql.EntityFrameworkCore.PostgreSQL`).
-  CI uses PostgreSQL for integration tests; locally you may run a
-  Postgres container or installed service.
-- ASP.NET Identity stores users and roles in the same DB (migrations
-  include Identity tables). Seeding uses `UserManager` & `RoleManager`.
-- AutoMapper maps DTOs <-> Models. Editing shapes may need mapping
-  configuration updates (`MappingProfiles.cs`).
-- Client interaction: this repo contains a client folder (`PetPal-client-rhyfxe`).
-  The backend expects cookie auth and CORS policy `AllowLocalhost` that
-  allows `http://localhost:3000` and `http://localhost:5173` and allows credentials.
+## Integration points & dependencies
+
+**Database**: PostgreSQL via Npgsql. ASP.NET Identity tables live alongside app 
+tables. `DbInitializer` seeds roles (`Admin`, `User`, `Veterinarian`) and test data.
+
+**Backend Dependencies**: 
+- EF Core 9.0 with PostgreSQL provider
+- ASP.NET Identity for auth (UserManager/RoleManager for seeding)
+- AutoMapper for DTO transformations
+- xUnit + FluentAssertions + Moq for testing
+
+**Frontend Dependencies**:
+- Next.js 15 with Turbopack dev mode
+- Radix UI for component primitives and theming
+- TanStack Query for server state management and caching
+- React Hook Form for form handling and validation
+
+**Cross-Stack Communication**:
+- Simple CORS policy allows localhost:3000 and localhost:5173 (HTTP/HTTPS)
+- Cookie-based auth with credentials enabled
+- Client services mirror API endpoints 1:1 (see `src/services/`)
 
 ## Tests and CI
 
@@ -138,46 +164,57 @@ adjust cookie settings when developing locally (quick temporary change
   coverage in CI. Keep coverage thresholds in mind when changing
   public behavior.
 
-## Common pitfalls and quick fixes
+## Common pitfalls & solutions
 
-- Cookie HTTPS mismatch: SecurePolicy=Always + SameSite=None requires
-  HTTPS. If cookies are missing in local dev, either run backend over
-  HTTPS, modify cookie settings for local dev, or run the client over
-  https.
-- Database not migrated: `DbInitializer` calls `context.Database.Migrate()`
-  at startup, but if migrations aren't applied you can run
-  `dotnet ef database update` manually.
-- Missing user profile after Identity user creation: several endpoints
-  create a minimal profile for Admin users if missing. If tests fail
-  due to missing profiles, inspect seeding in `DbInitializer`.
+**Cookie Auth Issues**: Simple config works for all environments. If auth breaks, 
+check browser dev tools for cookie details and ensure frontend uses credentials.
 
-## How an AI agent should make changes
+**Pet Ownership Bugs**: Always check ownership through `PetOwner` join table, 
+not direct relationships. Many operations require `IsPrimaryOwner = true`.
 
-1. Read the small list of relevant files above before editing.
-2. Keep changes minimal and explicit; prefer endpoint-level changes
-   over sweeping framework edits.
-3. Run unit tests locally after making changes (`dotnet test`). Fix
-   compilation or test failures before proposing a PR.
-4. When adding database schema changes: add EF migration, include the
-   generated migration file under `Migrations/`, and verify migration
-   applies locally (`dotnet ef database update`).
-5. If changing DTOs or models, update AutoMapper profiles and tests.
-6. If changing anything ignore warnings
+**EF Query Issues**: Address is an owned type (not separate table). Use 
+`.Include(u => u.Address)` on UserProfile, never query Address directly.
 
-## Useful snippets (for human reviewers)
+**DateTime Issues**: All dates auto-convert to UTC. Don't manually convert 
+— let the ValueConverter handle it.
 
-- Seeded admin credentials (useful when testing):
-  - Email: `admin@petpal.com`
-  - Password: `Admin123!`
-  These are created by `DbInitializer` when the database is empty.
+**Migration Problems**: `DbInitializer.Initialize()` runs on startup. If 
+schema issues occur, manually run `dotnet ef database update`.
 
-## Where to add more documentation
+## AI agent workflow
 
-- Add component-level notes near `Program.cs` or the relevant
-  `Endpoints` file when you change behavior (e.g., change cookie
-  policy, add a new role, change time handling).
+1. **Understand the change**: Read relevant endpoint/service files first
+2. **Follow patterns**: Use existing code as examples (especially auth and ownership checks)
+3. **Test immediately**: Run `dotnet test` (backend) and `npm run lint` (frontend)
+4. **Handle migrations**: When changing models, add migration and test locally
+5. **Update mappings**: DTO/Model changes need AutoMapper profile updates
+6. **Preserve auth flow**: Don't break cookie auth or role-based access control
 
----
+## Testing credentials & useful snippets
 
-If anything in this file is unclear, or you need runtime secrets,
-explain what you need and why before modifying secrets or CI configs.
+**Seeded Admin Account** (created by `DbInitializer`):
+- Email: `admin@petpal.com` 
+- Password: `Admin123!`
+
+**Common Query Patterns**:
+```csharp
+// Get user's pets with ownership info
+var pets = await db.PetOwners
+    .Include(po => po.Pet)
+    .ThenInclude(p => p.Owners.Where(o => o.PetId == o.Pet.Id))
+    .Where(po => po.UserProfileId == userProfileId)
+    .Select(po => po.Pet)
+    .ToListAsync();
+
+// Check primary ownership
+var isPrimaryOwner = await db.PetOwners
+    .AnyAsync(po => po.PetId == petId && 
+                   po.UserProfileId == userProfileId && 
+                   po.IsPrimaryOwner);
+```
+
+**Frontend Auth Usage**:
+```javascript
+const { user, isAuthenticated, hasRole } = useAuth();
+if (hasRole('Admin')) { /* admin features */ }
+```
