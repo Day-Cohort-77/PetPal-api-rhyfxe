@@ -144,3 +144,6 @@ app.MapAppointmentEndpoints();
 app.MapMedicationEndpoints();
 // app.MapVeterinarianEndpoints();
 app.Run();
+
+// Make Program accessible for testing
+public partial class Program { }
