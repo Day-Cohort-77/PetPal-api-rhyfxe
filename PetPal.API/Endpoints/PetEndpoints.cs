@@ -186,8 +186,23 @@ public static class PetEndpoints
                 return Results.Forbid();
             }
 
+            // Store original values that shouldn't be overwritten if null
+            var originalImageUrl = pet.ImageUrl;
+            var originalNotes = pet.Notes;
+
             // Update the pet
             mapper.Map(petDto, pet);
+
+            // Preserve existing values if DTO values are null/empty
+            if (string.IsNullOrEmpty(petDto.ImageUrl) && !string.IsNullOrEmpty(originalImageUrl))
+            {
+                pet.ImageUrl = originalImageUrl;
+            }
+            if (string.IsNullOrEmpty(petDto.Notes) && !string.IsNullOrEmpty(originalNotes))
+            {
+                pet.Notes = originalNotes;
+            }
+
             pet.UpdatedAt = DateTime.UtcNow;
 
             await db.SaveChangesAsync();

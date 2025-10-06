@@ -13,6 +13,7 @@ public class Pet
     public string Color { get; set; }
     public string? ImageUrl { get; set; }
     public string? MicrochipNumber { get; set; }
+    public string? Notes { get; set; }
     public List<PetOwner> Owners { get; set; } = new List<PetOwner>();
     public List<HealthRecord> HealthRecords { get; set; } = new List<HealthRecord>();
     public List<Appointment> Appointments { get; set; } = new List<Appointment>();

@@ -262,7 +262,7 @@ namespace PetPal.API.Migrations
 
                     b.HasIndex("VeterinarianId");
 
-                    b.ToTable("Appointments");
+                    b.ToTable("Appointments", (string)null);
                 });
 
             modelBuilder.Entity("PetPal.API.Models.HealthRecord", b =>
@@ -310,7 +310,7 @@ namespace PetPal.API.Migrations
 
                     b.HasIndex("VeterinarianId");
 
-                    b.ToTable("HealthRecords");
+                    b.ToTable("HealthRecords", (string)null);
                 });
 
             modelBuilder.Entity("PetPal.API.Models.Medication", b =>
@@ -363,7 +363,7 @@ namespace PetPal.API.Migrations
 
                     b.HasIndex("PetId");
 
-                    b.ToTable("Medications");
+                    b.ToTable("Medications", (string)null);
                 });
 
             modelBuilder.Entity("PetPal.API.Models.Pet", b =>
@@ -418,7 +418,7 @@ namespace PetPal.API.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Pets");
+                    b.ToTable("Pets", (string)null);
                 });
 
             modelBuilder.Entity("PetPal.API.Models.PetOwner", b =>
@@ -447,7 +447,7 @@ namespace PetPal.API.Migrations
 
                     b.HasIndex("UserProfileId");
 
-                    b.ToTable("PetOwners");
+                    b.ToTable("PetOwners", (string)null);
                 });
 
             modelBuilder.Entity("PetPal.API.Models.ThemePreferences", b =>
@@ -484,7 +484,7 @@ namespace PetPal.API.Migrations
                     b.HasIndex("UserProfileId")
                         .IsUnique();
 
-                    b.ToTable("ThemePreferences");
+                    b.ToTable("ThemePreferences", (string)null);
                 });
 
             modelBuilder.Entity("PetPal.API.Models.TrainingProgress", b =>
@@ -551,7 +551,7 @@ namespace PetPal.API.Migrations
 
                     b.HasIndex("PetId");
 
-                    b.ToTable("TrainingProgress");
+                    b.ToTable("TrainingProgress", (string)null);
                 });
 
             modelBuilder.Entity("PetPal.API.Models.UserProfile", b =>
@@ -595,7 +595,7 @@ namespace PetPal.API.Migrations
 
                     b.HasIndex("IdentityUserId");
 
-                    b.ToTable("UserProfiles");
+                    b.ToTable("UserProfiles", (string)null);
                 });
 
             modelBuilder.Entity("PetPal.API.Models.Veterinarian", b =>
@@ -646,7 +646,7 @@ namespace PetPal.API.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Veterinarians");
+                    b.ToTable("Veterinarians", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -824,7 +824,7 @@ namespace PetPal.API.Migrations
 
                             b1.HasKey("UserProfileId");
 
-                            b1.ToTable("UserProfiles");
+                            b1.ToTable("UserProfiles", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("UserProfileId");

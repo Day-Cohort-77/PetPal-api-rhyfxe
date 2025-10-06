@@ -60,7 +60,7 @@ public class MappingProfiles : Profile
             .ForMember(dest => dest.PetName, opt => opt.MapFrom(src => src.Pet.Name));
         CreateMap<TrainingProgressCreateDto, TrainingProgress>();
         CreateMap<TrainingProgressUpdateDto, TrainingProgress>();
-        
+
         // Theme Preferences mappings
         CreateMap<ThemePreferences, ThemePreferencesDto>()
             .ForMember(dest => dest.UserId, opt => opt.MapFrom(src => src.UserProfile!.IdentityUserId));

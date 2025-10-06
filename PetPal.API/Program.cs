@@ -125,6 +125,9 @@ if (app.Environment.IsDevelopment())
 // Use CORS middleware BEFORE authentication
 app.UseCors("DefaultCorsPolicy");
 
+// Enable serving static files from wwwroot (required for image uploads)
+app.UseStaticFiles();
+
 // Add authentication middleware
 app.UseAuthentication();
 

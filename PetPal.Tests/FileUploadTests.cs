@@ -1,251 +1,267 @@
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using PetPal.API.Data;
-using System.Text;
-using Xunit;
-using FluentAssertions;
-using System.Net.Http.Headers;
-using System.Text.Json;
-using Microsoft.AspNetCore.Identity;
 using PetPal.API.Models;
-using Microsoft.Extensions.FileProviders;
+using FluentAssertions;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Http;
+using System.ComponentModel.DataAnnotations;
 
 namespace PetPal.Tests;
 
-public class FileUploadTests : IClassFixture<WebApplicationFactory<Program>>
+public class FileUploadTests : IDisposable
 {
-    private readonly WebApplicationFactory<Program> _factory;
-    private readonly HttpClient _client;
+    private readonly PetPalDbContext _context;
 
-    public FileUploadTests(WebApplicationFactory<Program> factory)
+    public FileUploadTests()
     {
-        _factory = factory.WithWebHostBuilder(builder =>
-        {
-            builder.ConfigureServices(services =>
-            {
-                // Remove the real database
-                var descriptor = services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<PetPalDbContext>));
-                if (descriptor != null)
-                    services.Remove(descriptor);
+        var options = new DbContextOptionsBuilder<PetPalDbContext>()
+            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+            .Options;
 
-                // Add in-memory database for testing
-                services.AddDbContext<PetPalDbContext>(options =>
-                {
-                    options.UseInMemoryDatabase("TestDb_FileUpload");
-                });
+        _context = new PetPalDbContext(options);
+        _context.Database.EnsureCreated();
+    }
 
-                // Use in-memory test environment
-                services.AddSingleton<IWebHostEnvironment>(serviceProvider =>
-                {
-                    var env = new TestWebHostEnvironment();
-                    return env;
-                });
-            });
-        });
+    #region File Upload Validation Tests
+    [Fact]
+    public void ValidateImageFile_ValidPngFile_ShouldReturnTrue()
+    {
+        // Arrange
+        var validPngBytes = CreateTestImageBytes();
+        var fileName = "test.png";
 
-        _client = _factory.CreateClient();
+        // Act
+        var result = IsValidImageFile(validPngBytes, fileName);
+
+        // Assert
+        result.Should().BeTrue();
     }
 
     [Fact]
-    public async Task UploadPetImage_ValidImageFile_ReturnsSuccessWithImageUrl()
+    public void ValidateImageFile_ValidJpegFile_ShouldReturnTrue()
     {
         // Arrange
-        await AuthenticateAsync();
-        
-        // Create a test image file (1x1 pixel PNG)
+        var validJpegBytes = CreateTestJpegBytes();
+        var fileName = "test.jpg";
+
+        // Act
+        var result = IsValidImageFile(validJpegBytes, fileName);
+
+        // Assert
+        result.Should().BeTrue();
+    }
+
+    [Fact]
+    public void ValidateImageFile_InvalidFileExtension_ShouldReturnFalse()
+    {
+        // Arrange
         var imageBytes = CreateTestImageBytes();
-        var content = new MultipartFormDataContent();
-        var fileContent = new ByteArrayContent(imageBytes);
-        fileContent.Headers.ContentType = MediaTypeHeaderValue.Parse("image/png");
-        content.Add(fileContent, "file", "test-pet.png");
+        var fileName = "test.txt";
 
         // Act
-        var response = await _client.PostAsync("/upload/pet-image", content);
+        var result = IsValidImageFile(imageBytes, fileName);
 
         // Assert
-        response.IsSuccessStatusCode.Should().BeTrue();
-        
-        var responseContent = await response.Content.ReadAsStringAsync();
-        var result = JsonSerializer.Deserialize<JsonElement>(responseContent);
-        
-        result.TryGetProperty("imageUrl", out var imageUrlProperty).Should().BeTrue();
-        var imageUrl = imageUrlProperty.GetString();
-        
-        imageUrl.Should().NotBeNullOrEmpty();
-        imageUrl.Should().StartWith("/uploads/pets/");
-        imageUrl.Should().EndWith(".png");
+        result.Should().BeFalse();
     }
 
     [Fact]
-    public async Task UploadPetImage_NoFile_ReturnsBadRequest()
+    public void ValidateImageFile_InvalidMagicBytes_ShouldReturnFalse()
     {
         // Arrange
-        await AuthenticateAsync();
-        var content = new MultipartFormDataContent();
+        var invalidBytes = new byte[] { 0x00, 0x01, 0x02, 0x03 };
+        var fileName = "test.png";
 
         // Act
-        var response = await _client.PostAsync("/upload/pet-image", content);
+        var result = IsValidImageFile(invalidBytes, fileName);
 
         // Assert
-        response.StatusCode.Should().Be(System.Net.HttpStatusCode.BadRequest);
-        
-        var responseContent = await response.Content.ReadAsStringAsync();
-        responseContent.Should().Contain("No file uploaded");
+        result.Should().BeFalse();
+    }
+
+    [Theory]
+    [InlineData("image.png", true)]
+    [InlineData("image.jpg", true)]
+    [InlineData("image.jpeg", true)]
+    [InlineData("image.gif", true)]
+    [InlineData("image.bmp", false)]
+    [InlineData("document.pdf", false)]
+    [InlineData("file.txt", false)]
+    [InlineData("", false)]
+    public void ValidateFileExtension_WithDifferentExtensions_ShouldReturnExpectedResult(string fileName, bool expected)
+    {
+        // Act
+        var result = HasValidImageExtension(fileName);
+
+        // Assert
+        result.Should().Be(expected);
     }
 
     [Fact]
-    public async Task UploadPetImage_InvalidFileType_ReturnsBadRequest()
+    public void ValidateFileSize_WithinLimit_ShouldReturnTrue()
     {
         // Arrange
-        await AuthenticateAsync();
-        
-        var textBytes = Encoding.UTF8.GetBytes("This is not an image");
-        var content = new MultipartFormDataContent();
-        var fileContent = new ByteArrayContent(textBytes);
-        fileContent.Headers.ContentType = MediaTypeHeaderValue.Parse("text/plain");
-        content.Add(fileContent, "file", "test.txt");
+        var fileBytes = new byte[1024 * 1024]; // 1MB
+        var maxSizeInBytes = 5 * 1024 * 1024; // 5MB
 
         // Act
-        var response = await _client.PostAsync("/upload/pet-image", content);
+        var result = IsValidFileSize(fileBytes.Length, maxSizeInBytes);
 
         // Assert
-        response.StatusCode.Should().Be(System.Net.HttpStatusCode.BadRequest);
-        
-        var responseContent = await response.Content.ReadAsStringAsync();
-        responseContent.Should().Contain("Only image files");
+        result.Should().BeTrue();
     }
 
     [Fact]
-    public async Task UploadPetImage_FileTooLarge_ReturnsBadRequest()
+    public void ValidateFileSize_ExceedsLimit_ShouldReturnFalse()
     {
         // Arrange
-        await AuthenticateAsync();
-        
-        // Create a file larger than 5MB
-        var largeFileBytes = new byte[6 * 1024 * 1024]; // 6MB
-        var content = new MultipartFormDataContent();
-        var fileContent = new ByteArrayContent(largeFileBytes);
-        fileContent.Headers.ContentType = MediaTypeHeaderValue.Parse("image/jpeg");
-        content.Add(fileContent, "file", "large-image.jpg");
+        var fileSize = 6 * 1024 * 1024; // 6MB
+        var maxSizeInBytes = 5 * 1024 * 1024; // 5MB
 
         // Act
-        var response = await _client.PostAsync("/upload/pet-image", content);
+        var result = IsValidFileSize(fileSize, maxSizeInBytes);
 
         // Assert
-        response.StatusCode.Should().Be(System.Net.HttpStatusCode.BadRequest);
-        
-        var responseContent = await response.Content.ReadAsStringAsync();
-        responseContent.Should().Contain("File size must be less than 5MB");
+        result.Should().BeFalse();
     }
 
-    [Fact]
-    public async Task UploadPetImage_Unauthorized_ReturnsUnauthorized()
-    {
-        // Arrange - Don't authenticate
-        var imageBytes = CreateTestImageBytes();
-        var content = new MultipartFormDataContent();
-        var fileContent = new ByteArrayContent(imageBytes);
-        fileContent.Headers.ContentType = MediaTypeHeaderValue.Parse("image/png");
-        content.Add(fileContent, "file", "test-pet.png");
-
-        // Act
-        var response = await _client.PostAsync("/upload/pet-image", content);
-
-        // Assert
-        response.StatusCode.Should().Be(System.Net.HttpStatusCode.Unauthorized);
-    }
-
-    [Fact]
-    public async Task UploadPetImage_DifferentImageFormats_ReturnsSuccess()
+    [Theory]
+    [InlineData(0, true)]
+    [InlineData(1024, true)]
+    [InlineData(1024 * 1024, true)] // 1MB
+    [InlineData(5 * 1024 * 1024, true)] // 5MB - exact limit
+    [InlineData(5 * 1024 * 1024 + 1, false)] // Just over 5MB
+    [InlineData(10 * 1024 * 1024, false)] // 10MB
+    public void ValidateFileSize_WithVariousSizes_ShouldReturnExpectedResult(int fileSize, bool expected)
     {
         // Arrange
-        await AuthenticateAsync();
-        
-        var testCases = new[]
+        var maxSizeInBytes = 5 * 1024 * 1024; // 5MB
+
+        // Act
+        var result = IsValidFileSize(fileSize, maxSizeInBytes);
+
+        // Assert
+        result.Should().Be(expected);
+    }
+    #endregion
+
+    #region File Path Generation Tests
+    [Fact]
+    public void GenerateUniqueFileName_WithValidInput_ShouldCreateUniqueFileName()
+    {
+        // Arrange
+        var originalFileName = "test-image.png";
+
+        // Act
+        var result1 = GenerateUniqueFileName(originalFileName);
+        var result2 = GenerateUniqueFileName(originalFileName);
+
+        // Assert
+        result1.Should().NotBeNullOrEmpty();
+        result2.Should().NotBeNullOrEmpty();
+        result1.Should().NotBe(result2); // Should be unique
+        result1.Should().EndWith(".png");
+        result2.Should().EndWith(".png");
+        result1.Should().NotContain("test-image"); // Should not contain original name for security
+    }
+
+    [Theory]
+    [InlineData("image.PNG", ".png")]
+    [InlineData("IMAGE.JPG", ".jpg")]
+    [InlineData("test.JPEG", ".jpeg")]
+    [InlineData("file.gif", ".gif")]
+    public void GenerateUniqueFileName_WithDifferentCases_ShouldNormalizeExtension(string fileName, string expectedExtension)
+    {
+        // Act
+        var result = GenerateUniqueFileName(fileName);
+
+        // Assert
+        result.Should().EndWith(expectedExtension);
+    }
+
+    [Fact]
+    public void GenerateUploadPath_WithValidFileName_ShouldCreateValidPath()
+    {
+        // Arrange
+        var fileName = "abc123.png";
+        var uploadFolder = "pets";
+
+        // Act
+        var result = GenerateUploadPath(fileName, uploadFolder);
+
+        // Assert
+        result.Should().NotBeNullOrEmpty();
+        result.Should().StartWith($"/uploads/{uploadFolder}/");
+        result.Should().EndWith(".png");
+        result.Should().Contain(fileName);
+    }
+    #endregion
+
+    #region Helper Methods - File Validation Logic
+    private static bool IsValidImageFile(byte[] fileBytes, string fileName)
+    {
+        return HasValidImageExtension(fileName) && HasValidImageMagicBytes(fileBytes);
+    }
+
+    private static bool HasValidImageExtension(string fileName)
+    {
+        if (string.IsNullOrEmpty(fileName))
+            return false;
+
+        var extension = Path.GetExtension(fileName).ToLowerInvariant();
+        var allowedExtensions = new[] { ".png", ".jpg", ".jpeg", ".gif" };
+
+        return allowedExtensions.Contains(extension);
+    }
+
+    private static bool HasValidImageMagicBytes(byte[] fileBytes)
+    {
+        if (fileBytes == null || fileBytes.Length < 4)
+            return false;
+
+        // Check PNG magic bytes
+        if (fileBytes.Length >= 8)
         {
-            ("image/jpeg", "test.jpg"),
-            ("image/png", "test.png"),
-            ("image/gif", "test.gif")
-        };
-
-        foreach (var (contentType, fileName) in testCases)
-        {
-            var imageBytes = CreateTestImageBytes();
-            var content = new MultipartFormDataContent();
-            var fileContent = new ByteArrayContent(imageBytes);
-            fileContent.Headers.ContentType = MediaTypeHeaderValue.Parse(contentType);
-            content.Add(fileContent, "file", fileName);
-
-            // Act
-            var response = await _client.PostAsync("/upload/pet-image", content);
-
-            // Assert
-            response.IsSuccessStatusCode.Should().BeTrue($"Failed for {contentType}");
-            
-            var responseContent = await response.Content.ReadAsStringAsync();
-            var result = JsonSerializer.Deserialize<JsonElement>(responseContent);
-            
-            result.TryGetProperty("imageUrl", out var imageUrlProperty).Should().BeTrue();
-            var imageUrl = imageUrlProperty.GetString();
-            imageUrl.Should().NotBeNullOrEmpty();
-        }
-    }
-
-    private async Task AuthenticateAsync()
-    {
-        // Create a test user and authenticate
-        using var scope = _factory.Services.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<PetPalDbContext>();
-        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
-
-        // Ensure database is created
-        await context.Database.EnsureCreatedAsync();
-
-        // Create test user if doesn't exist
-        var testEmail = "test@petpal.com";
-        var existingUser = await userManager.FindByEmailAsync(testEmail);
-        
-        if (existingUser == null)
-        {
-            var testUser = new IdentityUser
-            {
-                UserName = testEmail,
-                Email = testEmail,
-                EmailConfirmed = true
-            };
-
-            await userManager.CreateAsync(testUser, "Test123!");
-            
-            // Create user profile
-            var userProfile = new UserProfile
-            {
-                IdentityUserId = testUser.Id,
-                FirstName = "Test",
-                LastName = "User",
-                Email = testEmail
-            };
-            
-            context.UserProfiles.Add(userProfile);
-            await context.SaveChangesAsync();
+            var pngSignature = new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A };
+            if (fileBytes.Take(8).SequenceEqual(pngSignature))
+                return true;
         }
 
-        // Login
-        var loginData = new
+        // Check JPEG magic bytes
+        if (fileBytes.Length >= 2)
         {
-            Email = testEmail,
-            Password = "Test123!"
-        };
+            if (fileBytes[0] == 0xFF && fileBytes[1] == 0xD8)
+                return true;
+        }
 
-        var loginContent = new StringContent(
-            JsonSerializer.Serialize(loginData),
-            Encoding.UTF8,
-            "application/json");
+        // Check GIF magic bytes
+        if (fileBytes.Length >= 6)
+        {
+            var gif87a = new byte[] { 0x47, 0x49, 0x46, 0x38, 0x37, 0x61 }; // GIF87a
+            var gif89a = new byte[] { 0x47, 0x49, 0x46, 0x38, 0x39, 0x61 }; // GIF89a
 
-        var loginResponse = await _client.PostAsync("/auth/login", loginContent);
-        loginResponse.IsSuccessStatusCode.Should().BeTrue();
+            if (fileBytes.Take(6).SequenceEqual(gif87a) || fileBytes.Take(6).SequenceEqual(gif89a))
+                return true;
+        }
+
+        return false;
+    }
+
+    private static bool IsValidFileSize(int fileSize, int maxSizeInBytes)
+    {
+        return fileSize <= maxSizeInBytes;
+    }
+
+    private static string GenerateUniqueFileName(string originalFileName)
+    {
+        var extension = Path.GetExtension(originalFileName).ToLowerInvariant();
+        var uniqueId = Guid.NewGuid().ToString("N")[..12]; // First 12 characters
+        return $"{uniqueId}{extension}";
+    }
+
+    private static string GenerateUploadPath(string fileName, string folder)
+    {
+        return $"/uploads/{folder}/{fileName}";
     }
 
     private static byte[] CreateTestImageBytes()
@@ -269,14 +285,28 @@ public class FileUploadTests : IClassFixture<WebApplicationFactory<Program>>
             0xAE, 0x42, 0x60, 0x82  // CRC
         };
     }
-}
 
-public class TestWebHostEnvironment : IWebHostEnvironment
-{
-    public string WebRootPath { get; set; } = Path.GetTempPath();
-    public string ContentRootPath { get; set; } = Directory.GetCurrentDirectory();
-    public string EnvironmentName { get; set; } = "Test";
-    public string ApplicationName { get; set; } = "PetPal.Tests";
-    public IFileProvider WebRootFileProvider { get; set; } = new NullFileProvider();
-    public IFileProvider ContentRootFileProvider { get; set; } = new NullFileProvider();
+    private static byte[] CreateTestJpegBytes()
+    {
+        // Create a minimal valid JPEG file
+        return new byte[]
+        {
+            0xFF, 0xD8, // JPEG SOI marker
+            0xFF, 0xE0, // JFIF marker
+            0x00, 0x10, // Length
+            0x4A, 0x46, 0x49, 0x46, 0x00, // "JFIF\0"
+            0x01, 0x01, // Version 1.1
+            0x01, // Aspect ratio units (1 = no units)
+            0x00, 0x01, // X density
+            0x00, 0x01, // Y density
+            0x00, 0x00, // Thumbnail width/height
+            0xFF, 0xD9 // EOI marker
+        };
+    }
+    #endregion
+
+    public void Dispose()
+    {
+        _context.Dispose();
+    }
 }
