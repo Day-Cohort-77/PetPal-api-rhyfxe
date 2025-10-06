@@ -98,11 +98,12 @@ public static class PetEndpoints
                 return Results.NotFound("Pet not found.");
             }
 
-            // Check if the user is an admin or owns the pet
+            // Check if the user is an admin, veterinarian, or owns the pet
             var isAdmin = user.IsInRole("Admin");
+            var isVeterinarian = user.IsInRole("Veterinarian");
             var isPetOwner = pet.Owners.Any(po => po.UserProfileId == userProfile.Id);
 
-            if (!isAdmin && !isPetOwner)
+            if (!isAdmin && !isVeterinarian && !isPetOwner)
             {
                 return Results.Forbid();
             }
