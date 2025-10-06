@@ -31,7 +31,8 @@ public static class DbInitializer
         await SeedTestVeterinarianUsers(userManager, context);
 
         // Seed sample data
-        await SeedSampleData(context, userManager);            logger.LogInformation("Database initialized successfully.");
+        await SeedSampleData(context, userManager);
+        logger.LogInformation("Database initialized successfully.");
         }
         catch (Exception ex)
         {
