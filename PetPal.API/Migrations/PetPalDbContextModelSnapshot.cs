@@ -402,6 +402,9 @@ namespace PetPal.API.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
                     b.Property<string>("Species")
                         .IsRequired()
                         .HasColumnType("text");
