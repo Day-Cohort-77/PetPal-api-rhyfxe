@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using PetPal.API.Data;
 using PetPal.API.Models;
@@ -11,9 +12,7 @@ public static class MedicationEndpoints
 {
     public static void MapMedicationEndpoints(this WebApplication app)
     {
-        var medicationGroup = app.MapGroup("/medications")
-            .WithTags("Medications")
-            .RequireAuthorization();
+        var medicationGroup = app.MapGroup("/medications").RequireAuthorization();
 
         // GET /medications/pet/{petId} - Get all medications for a specific pet
         // Any authenticated user can view medications for their own pets
@@ -70,6 +69,199 @@ public static class MedicationEndpoints
             .Produces(204)
             .Produces(404)
             .Produces(403);
+
+        // NEW REMINDER ENDPOINTS
+        
+        // Set medication reminders
+        medicationGroup.MapPost("/reminders", async (
+            SetMedicationReminderDto reminderDto,
+            PetPalDbContext context,
+            UserManager<IdentityUser> userManager,
+            ClaimsPrincipal user) =>
+        {
+            var currentUser = await userManager.GetUserAsync(user);
+            if (currentUser == null)
+                return Results.Unauthorized();
+
+            try
+            {
+                // Create mock reminders for now
+                var reminders = reminderDto.Times.Select((time, index) => new MedicationReminderDto
+                {
+                    Id = index + 1,
+                    MedicationId = reminderDto.MedicationId,
+                    PetId = reminderDto.PetId,
+                    Time = time,
+                    Enabled = reminderDto.Enabled,
+                    NotificationMethods = reminderDto.NotificationMethods
+                }).ToList();
+
+                var response = new SetMedicationReminderResponseDto
+                {
+                    Success = true,
+                    Message = "Medication reminders set successfully",
+                    Reminders = reminders
+                };
+
+                return Results.Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return Results.Problem($"Error setting reminders: {ex.Message}");
+            }
+        });
+
+        // Get active reminders for a user
+        medicationGroup.MapGet("/reminders/active/{userId}", async (
+            string userId,
+            PetPalDbContext context,
+            UserManager<IdentityUser> userManager,
+            ClaimsPrincipal user) =>
+        {
+            try
+            {
+                // Return empty array for now - no active reminders
+                // In a real implementation, you'd fetch from database
+                return Results.Ok(new List<object>());
+            }
+            catch (Exception ex)
+            {
+                return Results.Problem($"Error fetching reminders: {ex.Message}");
+            }
+        });
+
+        // Get active reminders for a specific pet
+        medicationGroup.MapGet("/reminders/pet/{petId:int}", async (
+            int petId,
+            PetPalDbContext context,
+            UserManager<IdentityUser> userManager,
+            ClaimsPrincipal user) =>
+        {
+            var currentUser = await userManager.GetUserAsync(user);
+            if (currentUser == null)
+                return Results.Unauthorized();
+
+            try
+            {
+                var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                
+                // Check if user owns the pet
+                var isOwner = await context.PetOwners
+                    .AnyAsync(po => po.PetId == petId && po.UserProfile.IdentityUserId == userId);
+
+                if (!isOwner && !user.IsInRole("Admin"))
+                    return Results.Forbid();
+
+                // Get active medications for this pet
+                var medications = await context.Medications
+                    .Include(m => m.Pet)
+                    .Where(m => m.PetId == petId && m.IsActive)
+                    .ToListAsync();
+
+                // Generate mock reminders based on medication frequency
+                var mockReminders = new List<object>();
+                foreach (var medication in medications)
+                {
+                    var times = GenerateReminderTimes(medication.Frequency);
+                    var today = DateTime.Today;
+                    
+                    for (int i = 0; i < times.Count; i++)
+                    {
+                        var reminderTime = DateTime.Parse($"{today:yyyy-MM-dd} {times[i]}");
+                        mockReminders.Add(new
+                        {
+                            Id = $"{medication.Id}-{i}",
+                            MedicationId = medication.Id,
+                            PetId = medication.PetId,
+                            MedicationName = medication.Name,
+                            Dosage = medication.Dosage,
+                            Time = times[i],
+                            ScheduledFor = reminderTime,
+                            Status = "pending",
+                            IsOverdue = reminderTime < DateTime.Now,
+                            NotificationMethods = new[] { "push" }
+                        });
+                    }
+                }
+
+                return Results.Ok(mockReminders.OrderBy(r => ((DateTime)((dynamic)r).ScheduledFor)).ToList());
+            }
+            catch (Exception ex)
+            {
+                return Results.Problem($"Error fetching pet reminders: {ex.Message}");
+            }
+        });
+
+        // Log medication administration
+        medicationGroup.MapPost("/administration-log", async (
+            LogMedicationAdministrationDto logDto,
+            PetPalDbContext context,
+            UserManager<IdentityUser> userManager,
+            ClaimsPrincipal user) =>
+        {
+            var currentUser = await userManager.GetUserAsync(user);
+            if (currentUser == null)
+                return Results.Unauthorized();
+
+            try
+            {
+                // Create mock log entry
+                var log = new MedicationAdministrationLogDto
+                {
+                    Id = Random.Shared.Next(1000, 9999),
+                    MedicationId = logDto.MedicationId,
+                    PetId = logDto.PetId,
+                    ReminderId = logDto.ReminderId,
+                    Status = logDto.Status,
+                    AdministeredAt = logDto.AdministeredAt,
+                    Notes = logDto.Notes,
+                    LoggedAt = DateTime.UtcNow
+                };
+
+                var response = new LogMedicationAdministrationResponseDto
+                {
+                    Success = true,
+                    Message = "Medication administration logged",
+                    Log = log
+                };
+
+                return Results.Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return Results.Problem($"Error logging administration: {ex.Message}");
+            }
+        });
+
+        // Get medication history
+        medicationGroup.MapGet("/history/{petId}/{medicationId}", async (
+            int petId,
+            int medicationId,
+            PetPalDbContext context,
+            UserManager<IdentityUser> userManager,
+            ClaimsPrincipal user) =>
+        {
+            var currentUser = await userManager.GetUserAsync(user);
+            if (currentUser == null)
+                return Results.Unauthorized();
+
+            try
+            {
+                // Return empty history for now
+                var history = new MedicationHistoryDto
+                {
+                    MedicationName = "Sample Medication",
+                    PetName = "Sample Pet",
+                    AdministrationHistory = new List<MedicationAdministrationLogDto>()
+                };
+
+                return Results.Ok(history);
+            }
+            catch (Exception ex)
+            {
+                return Results.Problem($"Error fetching history: {ex.Message}");
+            }
+        });
     }
 
     private static async Task<IResult> GetMedicationsForPet(
@@ -364,5 +556,45 @@ public static class MedicationEndpoints
         await context.SaveChangesAsync();
 
         return Results.NoContent();
+    }
+
+    // Helper method to generate reminder times from frequency
+    private static List<string> GenerateReminderTimes(string frequency)
+    {
+        var freq = frequency?.ToLower() ?? "";
+        
+        if (freq.Contains("once daily") || freq.Contains("1x daily") || freq.Contains("daily"))
+        {
+            return new List<string> { "08:00" };
+        }
+        else if (freq.Contains("twice daily") || freq.Contains("2x daily") || freq.Contains("bid"))
+        {
+            return new List<string> { "08:00", "20:00" };
+        }
+        else if (freq.Contains("three times") || freq.Contains("3x daily") || freq.Contains("tid"))
+        {
+            return new List<string> { "08:00", "14:00", "20:00" };
+        }
+        else if (freq.Contains("four times") || freq.Contains("4x daily") || freq.Contains("qid"))
+        {
+            return new List<string> { "08:00", "12:00", "16:00", "20:00" };
+        }
+        else if (freq.Contains("every 8 hours"))
+        {
+            return new List<string> { "08:00", "16:00", "00:00" };
+        }
+        else if (freq.Contains("every 6 hours"))
+        {
+            return new List<string> { "06:00", "12:00", "18:00", "00:00" };
+        }
+        else if (freq.Contains("every 4 hours"))
+        {
+            return new List<string> { "06:00", "10:00", "14:00", "18:00", "22:00" };
+        }
+        else
+        {
+            // Default to once daily for unknown patterns
+            return new List<string> { "08:00" };
+        }
     }
 }
