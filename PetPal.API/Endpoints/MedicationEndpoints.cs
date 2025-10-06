@@ -118,11 +118,58 @@ public static class MedicationEndpoints
             UserManager<IdentityUser> userManager,
             ClaimsPrincipal user) =>
         {
+            var currentUser = await userManager.GetUserAsync(user);
+            if (currentUser == null)
+                return Results.Unauthorized();
+
             try
             {
-                // Return empty array for now - no active reminders
-                // In a real implementation, you'd fetch from database
-                return Results.Ok(new List<object>());
+                var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                
+                // Get all pets owned by the user
+                var userPets = await context.PetOwners
+                    .Include(po => po.Pet)
+                    .Where(po => po.UserProfile.IdentityUserId == userIdClaim)
+                    .Select(po => po.Pet)
+                    .ToListAsync();
+
+                var allReminders = new List<object>();
+
+                foreach (var pet in userPets)
+                {
+                    // Get active medications for this pet
+                    var medications = await context.Medications
+                        .Where(m => m.PetId == pet.Id && m.IsActive)
+                        .ToListAsync();
+
+                    // Generate mock reminders based on medication frequency
+                    foreach (var medication in medications)
+                    {
+                        var times = GenerateReminderTimes(medication.Frequency);
+                        var today = DateTime.Today;
+                        
+                        for (int i = 0; i < times.Count; i++)
+                        {
+                            var reminderTime = DateTime.Parse($"{today:yyyy-MM-dd} {times[i]}");
+                            allReminders.Add(new
+                            {
+                                Id = $"{medication.Id}-{i}",
+                                MedicationId = medication.Id,
+                                PetId = medication.PetId,
+                                PetName = pet.Name,
+                                MedicationName = medication.Name,
+                                Dosage = medication.Dosage,
+                                Time = times[i],
+                                ScheduledFor = reminderTime,
+                                Status = "pending",
+                                IsOverdue = reminderTime < DateTime.Now,
+                                NotificationMethods = new[] { "push" }
+                            });
+                        }
+                    }
+                }
+
+                return Results.Ok(allReminders.OrderBy(r => ((DateTime)((dynamic)r).ScheduledFor)).ToList());
             }
             catch (Exception ex)
             {

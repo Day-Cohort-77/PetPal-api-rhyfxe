@@ -72,7 +72,7 @@ public class LogMedicationAdministrationDto
 {
     public int MedicationId { get; set; }
     public int PetId { get; set; }
-    public int ReminderId { get; set; }
+    public int? ReminderId { get; set; }
     public required string Status { get; set; } // "administered" or "skipped"
     public DateTime AdministeredAt { get; set; }
     public string? Notes { get; set; }
@@ -83,7 +83,7 @@ public class MedicationAdministrationLogDto
     public int Id { get; set; }
     public int MedicationId { get; set; }
     public int PetId { get; set; }
-    public int ReminderId { get; set; }
+    public int? ReminderId { get; set; }
     public required string Status { get; set; }
     public DateTime AdministeredAt { get; set; }
     public string? Notes { get; set; }
@@ -99,6 +99,7 @@ public class LogMedicationAdministrationResponseDto
 
 public class MedicationHistoryDto
 {
+    public int MedicationId { get; set; }
     public required string MedicationName { get; set; }
     public required string PetName { get; set; }
     public List<MedicationAdministrationLogDto> AdministrationHistory { get; set; } = new List<MedicationAdministrationLogDto>();
