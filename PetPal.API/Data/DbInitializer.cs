@@ -27,10 +27,11 @@ public static class DbInitializer
             // Seed admin user
             await SeedAdminUser(userManager, context);
 
-            // Seed sample data
-            await SeedSampleData(context, userManager);
+        // Seed test veterinarian users
+        await SeedTestVeterinarianUsers(userManager, context);
 
-            logger.LogInformation("Database initialized successfully.");
+        // Seed sample data
+        await SeedSampleData(context, userManager);            logger.LogInformation("Database initialized successfully.");
         }
         catch (Exception ex)
         {
@@ -154,7 +155,7 @@ public static class DbInitializer
         if (needsBasicSeeding)
         {
             // Seed veterinarians
-            veterinarians = await SeedSampleVeterinarians(context);
+            veterinarians = await SeedSampleVeterinarians(context, userManager);
 
             // Seed sample users and get their profiles
             userProfiles = await SeedSampleUsers(context, userManager);
@@ -187,60 +188,137 @@ public static class DbInitializer
         }
     }
 
-    private static async Task<List<Veterinarian>> SeedSampleVeterinarians(PetPalDbContext context)
+    private static async Task<List<Veterinarian>> SeedSampleVeterinarians(PetPalDbContext context, UserManager<IdentityUser> userManager)
     {
-        var veterinarians = new List<Veterinarian>
+        var veterinarianData = new[]
         {
-            new Veterinarian
-            {
-                FirstName = "John",
-                LastName = "Smith",
-                Email = "john.smith@petpal.com",
-                Phone = "555-111-2222",
-                Specialty = "General",
-                ClinicName = "PetPal Clinic",
-                Address = "123 Main St",
-                LicenseNumber = "VET12345"
-            },
-            new Veterinarian
-            {
-                FirstName = "Sarah",
-                LastName = "Johnson",
-                Email = "sarah.johnson@petpal.com",
-                Phone = "555-333-4444",
-                Specialty = "Surgery",
-                ClinicName = "PetPal Clinic",
-                Address = "123 Main St",
-                LicenseNumber = "VET67890"
-            },
-            new Veterinarian
-            {
-                FirstName = "Michael",
-                LastName = "Chen",
-                Email = "michael.chen@petpal.com",
-                Phone = "555-555-6666",
-                Specialty = "Dermatology",
-                ClinicName = "PetPal Specialty Clinic",
-                Address = "456 Oak Ave",
-                LicenseNumber = "VET24680"
-            },
-            new Veterinarian
-            {
-                FirstName = "Emily",
-                LastName = "Rodriguez",
-                Email = "emily.rodriguez@petpal.com",
-                Phone = "555-777-8888",
-                Specialty = "Cardiology",
-                ClinicName = "PetPal Specialty Clinic",
-                Address = "456 Oak Ave",
-                LicenseNumber = "VET13579"
-            }
+            new { FirstName = "John", LastName = "Smith", Email = "john.smith@petpal.com", Phone = "555-111-2222", Specialty = "General", ClinicName = "PetPal Clinic", Address = "123 Main St", LicenseNumber = "VET12345" },
+            new { FirstName = "Sarah", LastName = "Johnson", Email = "sarah.johnson@petpal.com", Phone = "555-333-4444", Specialty = "Surgery", ClinicName = "PetPal Clinic", Address = "123 Main St", LicenseNumber = "VET67890" },
+            new { FirstName = "Michael", LastName = "Chen", Email = "michael.chen@petpal.com", Phone = "555-555-6666", Specialty = "Dermatology", ClinicName = "PetPal Specialty Clinic", Address = "456 Oak Ave", LicenseNumber = "VET24680" },
+            new { FirstName = "Emily", LastName = "Rodriguez", Email = "emily.rodriguez@petpal.com", Phone = "555-777-8888", Specialty = "Cardiology", ClinicName = "PetPal Specialty Clinic", Address = "456 Oak Ave", LicenseNumber = "VET13579" }
         };
+
+        var veterinarians = new List<Veterinarian>();
+
+        foreach (var vetData in veterinarianData)
+        {
+            // Check if Identity user already exists
+            var identityUser = await userManager.FindByEmailAsync(vetData.Email);
+            if (identityUser == null)
+            {
+                // Create Identity user for veterinarian
+                identityUser = new IdentityUser
+                {
+                    UserName = vetData.Email,
+                    Email = vetData.Email,
+                    EmailConfirmed = true
+                };
+
+                var result = await userManager.CreateAsync(identityUser, "VetPass123!");
+                if (result.Succeeded)
+                {
+                    // Assign Veterinarian role
+                    await userManager.AddToRoleAsync(identityUser, "Veterinarian");
+
+                    // Create UserProfile for veterinarian
+                    var userProfile = new UserProfile
+                    {
+                        FirstName = vetData.FirstName,
+                        LastName = vetData.LastName,
+                        Email = vetData.Email,
+                        Address = new Address
+                        {
+                            Street = vetData.Address,
+                            City = "Veterinary City",
+                            State = "CA",
+                            ZipCode = "90210"
+                        },
+                        Phone = vetData.Phone,
+                        PreferredContactMethod = "Email",
+                        IdentityUserId = identityUser.Id,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    };
+
+                    context.UserProfiles.Add(userProfile);
+                }
+            }
+
+            // Create Veterinarian record
+            var veterinarian = new Veterinarian
+            {
+                FirstName = vetData.FirstName,
+                LastName = vetData.LastName,
+                Email = vetData.Email,
+                Phone = vetData.Phone,
+                Specialty = vetData.Specialty,
+                ClinicName = vetData.ClinicName,
+                Address = vetData.Address,
+                LicenseNumber = vetData.LicenseNumber
+            };
+
+            veterinarians.Add(veterinarian);
+        }
 
         context.Veterinarians.AddRange(veterinarians);
         await context.SaveChangesAsync();
 
         return veterinarians;
+    }
+
+    private static async Task SeedTestVeterinarianUsers(UserManager<IdentityUser> userManager, PetPalDbContext context)
+    {
+        // Create simple test veterinarian accounts
+        var testVets = new[]
+        {
+            new { Email = "vet@petpal.com", FirstName = "Test", LastName = "Veterinarian" },
+            new { Email = "sarah.johnson@petpal.com", FirstName = "Sarah", LastName = "Johnson" },
+            new { Email = "michael.brown@petpal.com", FirstName = "Michael", LastName = "Brown" }
+        };
+
+        foreach (var vetData in testVets)
+        {
+            var existingUser = await userManager.FindByEmailAsync(vetData.Email);
+            if (existingUser == null)
+            {
+                var identityUser = new IdentityUser
+                {
+                    UserName = vetData.Email,
+                    Email = vetData.Email,
+                    EmailConfirmed = true
+                };
+
+                var result = await userManager.CreateAsync(identityUser, "VetPass123!");
+                if (result.Succeeded)
+                {
+                    await userManager.AddToRoleAsync(identityUser, "Veterinarian");
+
+                    // Create user profile
+                    var userProfile = new UserProfile
+                    {
+                        FirstName = vetData.FirstName,
+                        LastName = vetData.LastName,
+                        Email = vetData.Email,
+                        Address = new Address
+                        {
+                            Street = "123 Vet Street",
+                            City = "Vet City",
+                            State = "CA",
+                            ZipCode = "90210"
+                        },
+                        Phone = "555-123-4567",
+                        PreferredContactMethod = "Email",
+                        IdentityUserId = identityUser.Id,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    };
+
+                    context.UserProfiles.Add(userProfile);
+                }
+            }
+        }
+
+        await context.SaveChangesAsync();
     }
 
     private static async Task<List<UserProfile>> SeedSampleUsers(PetPalDbContext context, UserManager<IdentityUser> userManager)

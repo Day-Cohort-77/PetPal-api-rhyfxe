@@ -12,18 +12,28 @@ public static class PetEndpoints
 {
     public static void MapPetEndpoints(this WebApplication app)
     {
-        // Get all pets (for admin)
+        // Get all pets (for admin and veterinarians)
         app.MapGet("/pets", async (
+            ClaimsPrincipal user,
             PetPalDbContext db,
             IMapper mapper) =>
         {
+            // Check if user is admin or veterinarian
+            var isAdmin = user.IsInRole("Admin");
+            var isVeterinarian = user.IsInRole("Veterinarian");
+
+            if (!isAdmin && !isVeterinarian)
+            {
+                return Results.Forbid();
+            }
+
             var pets = await db.Pets
                 .Include(p => p.Owners.Where(o => o.PetId == o.Pet.Id))
                 .ThenInclude(po => po.UserProfile)
                 .ToListAsync();
 
             return Results.Ok(mapper.Map<List<PetDto>>(pets));
-        }).RequireAuthorization("AdminOnly");
+        }).RequireAuthorization();
 
         // Get pets for current user
         app.MapGet("/user/pets", async (

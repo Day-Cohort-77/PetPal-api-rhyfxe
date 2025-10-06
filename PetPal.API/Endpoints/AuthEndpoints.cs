@@ -76,28 +76,40 @@ public static class AuthEndpoints
             SignInManager<IdentityUser> signInManager,
             UserManager<IdentityUser> userManager,
             PetPalDbContext db,
-            IMapper mapper) =>
+            IMapper mapper,
+            ILogger<Program> logger) =>
         {
+            logger.LogInformation("Login attempt for email: {Email}", login.Email);
+            
             var identityUser = await userManager.FindByEmailAsync(login.Email);
             if (identityUser == null)
             {
-                return Results.Unauthorized();
+                logger.LogWarning("User not found with email: {Email}", login.Email);
+                return Results.Problem("Invalid email or password.", statusCode: 401);
             }
 
+            logger.LogInformation("User found: {UserId}, checking password", identityUser.Id);
+            
             var result = await signInManager.CheckPasswordSignInAsync(identityUser, login.Password, false);
             if (!result.Succeeded)
             {
-                return Results.Unauthorized();
+                logger.LogWarning("Password check failed for user: {Email}, Result: {Result}", login.Email, result);
+                return Results.Problem("Invalid email or password.", statusCode: 401);
             }
+
+            logger.LogInformation("Password check succeeded for user: {Email}", login.Email);
 
             // Get the user profile
             var userProfile = await db.UserProfiles.FirstOrDefaultAsync(up => up.IdentityUserId == identityUser.Id);
+            logger.LogInformation("User profile found: {Found} for user: {UserId}", userProfile != null, identityUser.Id);
 
             // If user profile doesn't exist but user is authenticated, create one
             if (userProfile == null)
             {
-                // Check if user has Admin role
+                // Check if user has Admin or Veterinarian role
                 var userRoles = await userManager.GetRolesAsync(identityUser);
+                logger.LogInformation("Creating profile for user {Email} with roles: {Roles}", login.Email, string.Join(", ", userRoles));
+                
                 if (userRoles.Contains("Admin"))
                 {
                     // Create a profile for the admin user
@@ -123,14 +135,41 @@ public static class AuthEndpoints
                     db.UserProfiles.Add(userProfile);
                     await db.SaveChangesAsync();
                 }
+                else if (userRoles.Contains("Veterinarian"))
+                {
+                    // Create a profile for the veterinarian user
+                    userProfile = new Models.UserProfile
+                    {
+                        FirstName = "Veterinarian",
+                        LastName = "User",
+                        Email = identityUser.Email,
+                        Address = new Address
+                        {
+                            Street = "Veterinary Address",
+                            City = "Veterinary City",
+                            State = "CA",
+                            ZipCode = "90210"
+                        },
+                        Phone = "Veterinary Phone",
+                        PreferredContactMethod = "Email",
+                        IdentityUserId = identityUser.Id,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    };
+
+                    db.UserProfiles.Add(userProfile);
+                    await db.SaveChangesAsync();
+                }
                 else
                 {
-                    return Results.Unauthorized();
+                    logger.LogWarning("User {Email} has no valid roles (Admin, Veterinarian, or User)", login.Email);
+                    return Results.Problem("User account not properly configured.", statusCode: 401);
                 }
             }
 
             // Get the user's roles
             var roles = await userManager.GetRolesAsync(identityUser);
+            logger.LogInformation("Final login - User: {Email}, Roles: {Roles}", login.Email, string.Join(", ", roles));
 
             // Sign in the user
             await signInManager.SignInAsync(identityUser, isPersistent: true);
@@ -139,6 +178,7 @@ public static class AuthEndpoints
             var userProfileDto = mapper.Map<UserProfileDto>(userProfile);
             userProfileDto.Roles = roles.ToList();
 
+            logger.LogInformation("Login successful for user: {Email}", login.Email);
             return Results.Ok(userProfileDto);
         });
 
@@ -173,7 +213,7 @@ public static class AuthEndpoints
             // If user profile doesn't exist but user is authenticated, create one
             if (userProfile == null)
             {
-                // Check if user has Admin role
+                // Check if user has Admin or Veterinarian role
                 var userRoles = await userManager.GetRolesAsync(identityUser);
                 if (userRoles.Contains("Admin"))
                 {
@@ -191,6 +231,31 @@ public static class AuthEndpoints
                             ZipCode = "90210"
                         },
                         Phone = "Admin Phone",
+                        PreferredContactMethod = "Email",
+                        IdentityUserId = identityUser.Id,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    };
+
+                    db.UserProfiles.Add(userProfile);
+                    await db.SaveChangesAsync();
+                }
+                else if (userRoles.Contains("Veterinarian"))
+                {
+                    // Create a profile for the veterinarian user
+                    userProfile = new Models.UserProfile
+                    {
+                        FirstName = "Veterinarian",
+                        LastName = "User",
+                        Email = identityUser.Email,
+                        Address = new Address
+                        {
+                            Street = "Veterinary Address",
+                            City = "Veterinary City",
+                            State = "CA",
+                            ZipCode = "90210"
+                        },
+                        Phone = "Veterinary Phone",
                         PreferredContactMethod = "Email",
                         IdentityUserId = identityUser.Id,
                         CreatedAt = DateTime.UtcNow,
