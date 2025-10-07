@@ -12,33 +12,33 @@ public static class VaccinationRecordEndpoints
 {
     public static void MapVaccinationRecordEndpoints(this IEndpointRouteBuilder routes)
     {
-        var group = routes.MapGroup("/api/vaccinations").WithTags("Vaccination Records");
+        var group = routes.MapGroup("/vaccinations").WithTags("Vaccination Records");
 
-        // GET /api/vaccinations/pet/{petId}
+        // GET /vaccinations/pet/{petId}
         group.MapGet("/pet/{petId:int}", GetPetVaccinationRecords)
             .WithName("GetPetVaccinationRecords")
             .WithOpenApi()
             .RequireAuthorization();
 
-        // GET /api/vaccinations/{id}
+        // GET /vaccinations/{id}
         group.MapGet("/{id:int}", GetVaccinationRecord)
             .WithName("GetVaccinationRecord")
             .WithOpenApi()
             .RequireAuthorization();
 
-        // POST /api/vaccinations
+        // POST /vaccinations
         group.MapPost("/", CreateVaccinationRecord)
             .WithName("CreateVaccinationRecord")
             .WithOpenApi()
             .RequireAuthorization();
 
-        // PUT /api/vaccinations/{id}
+        // PUT /vaccinations/{id}
         group.MapPut("/{id:int}", UpdateVaccinationRecord)
             .WithName("UpdateVaccinationRecord")
             .WithOpenApi()
             .RequireAuthorization();
 
-        // DELETE /api/vaccinations/{id}
+        // DELETE /vaccinations/{id}
         group.MapDelete("/{id:int}", DeleteVaccinationRecord)
             .WithName("DeleteVaccinationRecord")
             .WithOpenApi()
@@ -221,7 +221,7 @@ public static class VaccinationRecordEndpoints
                 .FirstOrDefaultAsync(vr => vr.Id == vaccinationRecord.Id);
 
             var vaccinationDto = mapper.Map<VaccinationRecordDto>(createdRecord);
-            return Results.Created($"/api/vaccinations/{vaccinationRecord.Id}", vaccinationDto);
+            return Results.Created($"/vaccinations/{vaccinationRecord.Id}", vaccinationDto);
         }
         catch (Exception ex)
         {
