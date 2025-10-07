@@ -141,6 +141,7 @@ app.MapAuthEndpoints();
 app.MapPetEndpoints();
 app.MapHealthRecordEndpoints();
 app.MapFileUploadEndpoints();
+app.MapVaccinationRecordEndpoints();
 app.MapTrainingProgressEndpoints();
 app.MapSettingsEndpoints();
 app.MapAppointmentEndpoints();

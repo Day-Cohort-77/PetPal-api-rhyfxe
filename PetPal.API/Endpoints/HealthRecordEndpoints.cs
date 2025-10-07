@@ -142,9 +142,21 @@ public static class HealthRecordEndpoints
             var isVet = user.IsInRole("Veterinarian");
             var isPrimaryOwner = pet.Owners.Any(po => po.UserProfileId == userProfile.Id && po.IsPrimaryOwner);
 
-            if (!isAdmin && !isVet && !isPrimaryOwner)
+            // For vaccination records, only veterinarians and admins can create them
+            if (healthRecordDto.RecordType?.ToUpper() == "VACCINATION")
             {
-                return Results.Forbid();
+                if (!isAdmin && !isVet)
+                {
+                    return Results.Forbid();
+                }
+            }
+            else
+            {
+                // For other health records, allow primary owners as well
+                if (!isAdmin && !isVet && !isPrimaryOwner)
+                {
+                    return Results.Forbid();
+                }
             }
 
             // Create the health record
@@ -198,9 +210,21 @@ public static class HealthRecordEndpoints
             var isVet = user.IsInRole("Veterinarian");
             var isPrimaryOwner = healthRecord.Pet.Owners.Any(po => po.UserProfileId == userProfile.Id && po.IsPrimaryOwner);
 
-            if (!isAdmin && !isVet && !isPrimaryOwner)
+            // For vaccination records, only veterinarians and admins can update them
+            if (healthRecord.RecordType?.ToUpper() == "VACCINATION")
             {
-                return Results.Forbid();
+                if (!isAdmin && !isVet)
+                {
+                    return Results.Forbid();
+                }
+            }
+            else
+            {
+                // For other health records, allow primary owners as well
+                if (!isAdmin && !isVet && !isPrimaryOwner)
+                {
+                    return Results.Forbid();
+                }
             }
 
             // Update the health record
@@ -253,9 +277,21 @@ public static class HealthRecordEndpoints
             var isVet = user.IsInRole("Veterinarian");
             var isPrimaryOwner = healthRecord.Pet.Owners.Any(po => po.UserProfileId == userProfile.Id && po.IsPrimaryOwner);
 
-            if (!isAdmin && !isVet && !isPrimaryOwner)
+            // For vaccination records, only veterinarians and admins can delete them
+            if (healthRecord.RecordType?.ToUpper() == "VACCINATION")
             {
-                return Results.Forbid();
+                if (!isAdmin && !isVet)
+                {
+                    return Results.Forbid();
+                }
+            }
+            else
+            {
+                // For other health records, allow primary owners as well
+                if (!isAdmin && !isVet && !isPrimaryOwner)
+                {
+                    return Results.Forbid();
+                }
             }
 
             // Delete the health record

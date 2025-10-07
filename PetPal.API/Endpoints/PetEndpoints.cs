@@ -12,18 +12,28 @@ public static class PetEndpoints
 {
     public static void MapPetEndpoints(this WebApplication app)
     {
-        // Get all pets (for admin)
+        // Get all pets (for admin and veterinarians)
         app.MapGet("/pets", async (
+            ClaimsPrincipal user,
             PetPalDbContext db,
             IMapper mapper) =>
         {
+            // Check if user is admin or veterinarian
+            var isAdmin = user.IsInRole("Admin");
+            var isVeterinarian = user.IsInRole("Veterinarian");
+
+            if (!isAdmin && !isVeterinarian)
+            {
+                return Results.Forbid();
+            }
+
             var pets = await db.Pets
                 .Include(p => p.Owners.Where(o => o.PetId == o.Pet.Id))
                 .ThenInclude(po => po.UserProfile)
                 .ToListAsync();
 
             return Results.Ok(mapper.Map<List<PetDto>>(pets));
-        }).RequireAuthorization("AdminOnly");
+        }).RequireAuthorization();
 
         // Get pets for current user
         app.MapGet("/user/pets", async (
@@ -88,11 +98,12 @@ public static class PetEndpoints
                 return Results.NotFound("Pet not found.");
             }
 
-            // Check if the user is an admin or owns the pet
+            // Check if the user is an admin, veterinarian, or owns the pet
             var isAdmin = user.IsInRole("Admin");
+            var isVeterinarian = user.IsInRole("Veterinarian");
             var isPetOwner = pet.Owners.Any(po => po.UserProfileId == userProfile.Id);
 
-            if (!isAdmin && !isPetOwner)
+            if (!isAdmin && !isVeterinarian && !isPetOwner)
             {
                 return Results.Forbid();
             }

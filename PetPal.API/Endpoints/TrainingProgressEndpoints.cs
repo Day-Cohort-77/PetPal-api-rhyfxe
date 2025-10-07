@@ -44,11 +44,12 @@ public static class TrainingProgressEndpoints
                 return Results.NotFound("Pet not found.");
             }
 
-            // Check if the user is an admin or owns the pet
+            // Check if the user is an admin, veterinarian, or owns the pet
             var isAdmin = user.IsInRole("Admin");
+            var isVeterinarian = user.IsInRole("Veterinarian");
             var isPetOwner = pet.Owners.Any(po => po.UserProfileId == userProfile.Id);
 
-            if (!isAdmin && !isPetOwner)
+            if (!isAdmin && !isVeterinarian && !isPetOwner)
             {
                 return Results.Forbid();
             }
@@ -102,11 +103,12 @@ public static class TrainingProgressEndpoints
                 return Results.NotFound("Training progress record not found.");
             }
 
-            // Check if the user is an admin or owns the pet
+            // Check if the user is an admin, veterinarian, or owns the pet
             var isAdmin = user.IsInRole("Admin");
+            var isVeterinarian = user.IsInRole("Veterinarian");
             var isPetOwner = pet.Owners.Any(po => po.UserProfileId == userProfile.Id);
 
-            if (!isAdmin && !isPetOwner)
+            if (!isAdmin && !isVeterinarian && !isPetOwner)
             {
                 return Results.Forbid();
             }
@@ -145,11 +147,12 @@ public static class TrainingProgressEndpoints
                 return Results.NotFound("Pet not found.");
             }
 
-            // Check if the user is an admin or owns the pet
+            // Check if the user is an admin, veterinarian, or owns the pet
             var isAdmin = user.IsInRole("Admin");
+            var isVeterinarian = user.IsInRole("Veterinarian");
             var isPetOwner = pet.Owners.Any(po => po.UserProfileId == userProfile.Id);
 
-            if (!isAdmin && !isPetOwner)
+            if (!isAdmin && !isVeterinarian && !isPetOwner)
             {
                 return Results.Forbid();
             }
@@ -206,11 +209,12 @@ public static class TrainingProgressEndpoints
                 return Results.NotFound("Training progress record not found.");
             }
 
-            // Check if the user is an admin or owns the pet
+            // Check if the user is an admin, veterinarian, or owns the pet
             var isAdmin = user.IsInRole("Admin");
+            var isVeterinarian = user.IsInRole("Veterinarian");
             var isPetOwner = pet.Owners.Any(po => po.UserProfileId == userProfile.Id);
 
-            if (!isAdmin && !isPetOwner)
+            if (!isAdmin && !isVeterinarian && !isPetOwner)
             {
                 return Results.Forbid();
             }
@@ -261,11 +265,12 @@ public static class TrainingProgressEndpoints
                 return Results.NotFound("Training progress record not found.");
             }
 
-            // Check if the user is an admin or owns the pet
+            // Check if the user is an admin, veterinarian, or owns the pet
             var isAdmin = user.IsInRole("Admin");
+            var isVeterinarian = user.IsInRole("Veterinarian");
             var isPetOwner = pet.Owners.Any(po => po.UserProfileId == userProfile.Id);
 
-            if (!isAdmin && !isPetOwner)
+            if (!isAdmin && !isVeterinarian && !isPetOwner)
             {
                 return Results.Forbid();
             }
@@ -300,8 +305,9 @@ public static class TrainingProgressEndpoints
             if (pet == null) return Results.NotFound("Pet not found.");
 
             var isAdmin = user.IsInRole("Admin");
+            var isVeterinarian = user.IsInRole("Veterinarian");
             var isPetOwner = pet.Owners.Any(po => po.UserProfileId == userProfile.Id);
-            if (!isAdmin && !isPetOwner) return Results.Forbid();
+            if (!isAdmin && !isVeterinarian && !isPetOwner) return Results.Forbid();
 
             var query = db.TrainingProgress
                 .Where(tp => tp.PetId == petId);
@@ -351,8 +357,9 @@ public static class TrainingProgressEndpoints
             if (pet == null) return Results.NotFound("Pet not found.");
 
             var isAdmin = user.IsInRole("Admin");
+            var isVeterinarian = user.IsInRole("Veterinarian");
             var isPetOwner = pet.Owners.Any(po => po.UserProfileId == userProfile.Id);
-            if (!isAdmin && !isPetOwner) return Results.Forbid();
+            if (!isAdmin && !isVeterinarian && !isPetOwner) return Results.Forbid();
 
             var query = db.TrainingProgress
                 .Where(tp => tp.PetId == petId);
@@ -451,8 +458,9 @@ public static class TrainingProgressEndpoints
             if (pet == null) return Results.NotFound("Pet not found.");
 
             var isAdmin = user.IsInRole("Admin");
+            var isVeterinarian = user.IsInRole("Veterinarian");
             var isPetOwner = pet.Owners.Any(po => po.UserProfileId == userProfile.Id);
-            if (!isAdmin && !isPetOwner) return Results.Forbid();
+            if (!isAdmin && !isVeterinarian && !isPetOwner) return Results.Forbid();
 
             var query = db.TrainingProgress
                 .Include(tp => tp.Pet)

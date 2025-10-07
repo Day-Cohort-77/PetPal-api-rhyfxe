@@ -61,6 +61,14 @@ public class MappingProfiles : Profile
         CreateMap<TrainingProgressCreateDto, TrainingProgress>();
         CreateMap<TrainingProgressUpdateDto, TrainingProgress>();
 
+        // Vaccination Record mappings
+        CreateMap<VaccinationRecord, VaccinationRecordDto>()
+            .ForMember(dest => dest.PetName, opt => opt.MapFrom(src => src.Pet.Name))
+            .ForMember(dest => dest.VeterinarianName, opt => opt.MapFrom(src =>
+                src.Veterinarian != null ? $"{src.Veterinarian.FirstName} {src.Veterinarian.LastName}" : null));
+        CreateMap<VaccinationRecordCreateDto, VaccinationRecord>();
+        CreateMap<VaccinationRecordUpdateDto, VaccinationRecord>();
+        
         // Theme Preferences mappings
         CreateMap<ThemePreferences, ThemePreferencesDto>()
             .ForMember(dest => dest.UserId, opt => opt.MapFrom(src => src.UserProfile!.IdentityUserId));
