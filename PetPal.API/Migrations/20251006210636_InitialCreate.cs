@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace PetPal.API.Migrations
 {
     /// <inheritdoc />
-    public partial class InitiCreate : Migration
+    public partial class InitialCreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -63,8 +63,8 @@ namespace PetPal.API.Migrations
                     DateOfBirth = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     Weight = table.Column<decimal>(type: "numeric", nullable: false),
                     Color = table.Column<string>(type: "text", nullable: false),
-                    ImageUrl = table.Column<string>(type: "text", nullable: false),
-                    MicrochipNumber = table.Column<string>(type: "text", nullable: false),
+                    ImageUrl = table.Column<string>(type: "text", nullable: true),
+                    MicrochipNumber = table.Column<string>(type: "text", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
@@ -210,8 +210,12 @@ namespace PetPal.API.Migrations
                     FirstName = table.Column<string>(type: "text", nullable: false),
                     LastName = table.Column<string>(type: "text", nullable: false),
                     Email = table.Column<string>(type: "text", nullable: false),
-                    Address = table.Column<string>(type: "text", nullable: false),
-                    Phone = table.Column<string>(type: "text", nullable: false),
+                    Street = table.Column<string>(type: "text", nullable: false),
+                    City = table.Column<string>(type: "text", nullable: false),
+                    State = table.Column<string>(type: "text", nullable: false),
+                    ZipCode = table.Column<string>(type: "text", nullable: false),
+                    Phone = table.Column<string>(type: "text", nullable: true),
+                    PreferredContactMethod = table.Column<string>(type: "text", nullable: false),
                     IdentityUserId = table.Column<string>(type: "text", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
@@ -250,6 +254,40 @@ namespace PetPal.API.Migrations
                     table.PrimaryKey("PK_Medications", x => x.Id);
                     table.ForeignKey(
                         name: "FK_Medications_Pets_PetId",
+                        column: x => x.PetId,
+                        principalTable: "Pets",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "TrainingProgress",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    PetId = table.Column<int>(type: "integer", nullable: false),
+                    SkillName = table.Column<string>(type: "text", nullable: false),
+                    Description = table.Column<string>(type: "text", nullable: false),
+                    Status = table.Column<string>(type: "text", nullable: false),
+                    ProficiencyLevel = table.Column<int>(type: "integer", nullable: true),
+                    Duration = table.Column<int>(type: "integer", nullable: true),
+                    DurationType = table.Column<string>(type: "text", nullable: true),
+                    StartDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    CompletionDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    Notes = table.Column<string>(type: "text", nullable: false),
+                    TrainerNotes = table.Column<string>(type: "text", nullable: true),
+                    IsSharedWithTrainer = table.Column<bool>(type: "boolean", nullable: false),
+                    TrainingGoal = table.Column<string>(type: "text", nullable: true),
+                    GoalDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_TrainingProgress", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_TrainingProgress_Pets_PetId",
                         column: x => x.PetId,
                         principalTable: "Pets",
                         principalColumn: "Id",
@@ -350,6 +388,99 @@ namespace PetPal.API.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
+            migrationBuilder.CreateTable(
+                name: "ThemePreferences",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    UserProfileId = table.Column<int>(type: "integer", nullable: false),
+                    Theme = table.Column<string>(type: "text", nullable: true),
+                    AccentColor = table.Column<string>(type: "text", nullable: true),
+                    FontSize = table.Column<string>(type: "text", nullable: true),
+                    UseSystemPreference = table.Column<bool>(type: "boolean", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ThemePreferences", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_ThemePreferences_UserProfiles_UserProfileId",
+                        column: x => x.UserProfileId,
+                        principalTable: "UserProfiles",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "MedicationReminders",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    MedicationId = table.Column<int>(type: "integer", nullable: false),
+                    PetId = table.Column<int>(type: "integer", nullable: false),
+                    ReminderTime = table.Column<TimeOnly>(type: "time without time zone", nullable: false),
+                    IsEnabled = table.Column<bool>(type: "boolean", nullable: false),
+                    NotificationMethods = table.Column<string>(type: "text", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_MedicationReminders", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_MedicationReminders_Medications_MedicationId",
+                        column: x => x.MedicationId,
+                        principalTable: "Medications",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_MedicationReminders_Pets_PetId",
+                        column: x => x.PetId,
+                        principalTable: "Pets",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "MedicationAdministrationLogs",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    MedicationId = table.Column<int>(type: "integer", nullable: false),
+                    PetId = table.Column<int>(type: "integer", nullable: false),
+                    ReminderId = table.Column<int>(type: "integer", nullable: true),
+                    Status = table.Column<int>(type: "integer", nullable: false),
+                    AdministeredAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    Notes = table.Column<string>(type: "text", nullable: true),
+                    LoggedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_MedicationAdministrationLogs", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_MedicationAdministrationLogs_MedicationReminders_ReminderId",
+                        column: x => x.ReminderId,
+                        principalTable: "MedicationReminders",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.SetNull);
+                    table.ForeignKey(
+                        name: "FK_MedicationAdministrationLogs_Medications_MedicationId",
+                        column: x => x.MedicationId,
+                        principalTable: "Medications",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_MedicationAdministrationLogs_Pets_PetId",
+                        column: x => x.PetId,
+                        principalTable: "Pets",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
             migrationBuilder.CreateIndex(
                 name: "IX_Appointments_PetId",
                 table: "Appointments",
@@ -408,6 +539,31 @@ namespace PetPal.API.Migrations
                 column: "VeterinarianId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_MedicationAdministrationLogs_MedicationId",
+                table: "MedicationAdministrationLogs",
+                column: "MedicationId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_MedicationAdministrationLogs_PetId",
+                table: "MedicationAdministrationLogs",
+                column: "PetId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_MedicationAdministrationLogs_ReminderId",
+                table: "MedicationAdministrationLogs",
+                column: "ReminderId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_MedicationReminders_MedicationId",
+                table: "MedicationReminders",
+                column: "MedicationId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_MedicationReminders_PetId",
+                table: "MedicationReminders",
+                column: "PetId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Medications_PetId",
                 table: "Medications",
                 column: "PetId");
@@ -421,6 +577,17 @@ namespace PetPal.API.Migrations
                 name: "IX_PetOwners_UserProfileId",
                 table: "PetOwners",
                 column: "UserProfileId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ThemePreferences_UserProfileId",
+                table: "ThemePreferences",
+                column: "UserProfileId",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_TrainingProgress_PetId",
+                table: "TrainingProgress",
+                column: "PetId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_UserProfiles_IdentityUserId",
@@ -453,10 +620,16 @@ namespace PetPal.API.Migrations
                 name: "HealthRecords");
 
             migrationBuilder.DropTable(
-                name: "Medications");
+                name: "MedicationAdministrationLogs");
 
             migrationBuilder.DropTable(
                 name: "PetOwners");
+
+            migrationBuilder.DropTable(
+                name: "ThemePreferences");
+
+            migrationBuilder.DropTable(
+                name: "TrainingProgress");
 
             migrationBuilder.DropTable(
                 name: "AspNetRoles");
@@ -465,13 +638,19 @@ namespace PetPal.API.Migrations
                 name: "Veterinarians");
 
             migrationBuilder.DropTable(
-                name: "Pets");
+                name: "MedicationReminders");
 
             migrationBuilder.DropTable(
                 name: "UserProfiles");
 
             migrationBuilder.DropTable(
+                name: "Medications");
+
+            migrationBuilder.DropTable(
                 name: "AspNetUsers");
+
+            migrationBuilder.DropTable(
+                name: "Pets");
         }
     }
 }
