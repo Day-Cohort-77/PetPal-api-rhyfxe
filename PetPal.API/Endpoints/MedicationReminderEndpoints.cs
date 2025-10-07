@@ -202,11 +202,41 @@ public static class MedicationReminderEndpoints
                 return Results.Problem("You do not have permission to access this pet's medication data", statusCode: 403);
             }
 
-            var reminders = await context.MedicationReminders
+            // Get today's date in UTC
+            var today = DateTime.UtcNow.Date;
+            var tomorrow = today.AddDays(1);
+            
+            Console.WriteLine($"[DEBUG] GetPetReminders - Today: {today}, Tomorrow: {tomorrow}");
+
+            // First get all reminders for the pet
+            var allReminders = await context.MedicationReminders
                 .Include(mr => mr.Medication)
-                .Where(mr => mr.PetId == petId)
-                .OrderBy(mr => mr.ReminderTime)
+                .Where(mr => mr.PetId == petId && mr.IsEnabled)
                 .ToListAsync();
+                
+            Console.WriteLine($"[DEBUG] Found {allReminders.Count} enabled reminders for pet {petId}");
+
+            // Then check each reminder for administration logs
+            var filteredReminders = new List<MedicationReminder>();
+            foreach (var reminder in allReminders)
+            {
+                var hasBeenAdministeredToday = await context.MedicationAdministrationLogs
+                    .AnyAsync(log => 
+                        log.ReminderId == reminder.Id && 
+                        log.Status == MedicationAdministrationStatus.Administered &&
+                        log.LoggedAt >= today && 
+                        log.LoggedAt < tomorrow);
+                        
+                Console.WriteLine($"[DEBUG] Reminder {reminder.Id} for medication {reminder.MedicationId}: HasBeenAdministered={hasBeenAdministeredToday}");
+                
+                if (!hasBeenAdministeredToday)
+                {
+                    filteredReminders.Add(reminder);
+                }
+            }
+
+            var reminders = filteredReminders.OrderBy(mr => mr.ReminderTime).ToList();
+            Console.WriteLine($"[DEBUG] Returning {reminders.Count} pending reminders");
 
             var reminderDtos = mapper.Map<List<MedicationReminderDto>>(reminders);
             return Results.Ok(reminderDtos);

@@ -151,20 +151,37 @@ public static class MedicationEndpoints
                         for (int i = 0; i < times.Count; i++)
                         {
                             var reminderTime = DateTime.Parse($"{today:yyyy-MM-dd} {times[i]}");
-                            allReminders.Add(new
+                            
+                            // Check if this medication has been administered today
+                            var todayStart = DateTime.UtcNow.Date;
+                            var todayEnd = todayStart.AddDays(1);
+                            
+                            var hasBeenAdministeredToday = await context.MedicationAdministrationLogs
+                                .AnyAsync(log => 
+                                    log.MedicationId == medication.Id && 
+                                    log.PetId == medication.PetId &&
+                                    log.Status == MedicationAdministrationStatus.Administered &&
+                                    log.LoggedAt >= todayStart && 
+                                    log.LoggedAt < todayEnd);
+                            
+                            // Only add reminder if not administered today
+                            if (!hasBeenAdministeredToday)
                             {
-                                Id = $"{medication.Id}-{i}",
-                                MedicationId = medication.Id,
-                                PetId = medication.PetId,
-                                PetName = pet.Name,
-                                MedicationName = medication.Name,
-                                Dosage = medication.Dosage,
-                                Time = times[i],
-                                ScheduledFor = reminderTime,
-                                Status = "pending",
-                                IsOverdue = reminderTime < DateTime.Now,
-                                NotificationMethods = new[] { "push" }
-                            });
+                                allReminders.Add(new
+                                {
+                                    Id = $"{medication.Id}-{i}",
+                                    MedicationId = medication.Id,
+                                    PetId = medication.PetId,
+                                    PetName = pet.Name,
+                                    MedicationName = medication.Name,
+                                    Dosage = medication.Dosage,
+                                    Time = times[i],
+                                    ScheduledFor = reminderTime,
+                                    Status = "pending",
+                                    IsOverdue = reminderTime < DateTime.Now,
+                                    NotificationMethods = new[] { "push" }
+                                });
+                            }
                         }
                     }
                 }
