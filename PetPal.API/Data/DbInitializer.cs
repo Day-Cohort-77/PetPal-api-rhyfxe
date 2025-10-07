@@ -27,10 +27,11 @@ public static class DbInitializer
             // Seed admin user
             await SeedAdminUser(userManager, context);
 
-            // Seed sample data
-            await SeedSampleData(context, userManager);
+        // Seed test veterinarian users
+        await SeedTestVeterinarianUsers(userManager, context);
 
-            logger.LogInformation("Database initialized successfully.");
+        // Seed sample data
+        await SeedSampleData(context, userManager);            logger.LogInformation("Database initialized successfully.");
         }
         catch (Exception ex)
         {
@@ -154,7 +155,7 @@ public static class DbInitializer
         if (needsBasicSeeding)
         {
             // Seed veterinarians
-            veterinarians = await SeedSampleVeterinarians(context);
+            veterinarians = await SeedSampleVeterinarians(context, userManager);
 
             // Seed sample users and get their profiles
             userProfiles = await SeedSampleUsers(context, userManager);
@@ -167,6 +168,7 @@ public static class DbInitializer
 
             // Seed health records
             await SeedSampleHealthRecords(context, pets, veterinarians);
+            await SeedSampleVaccinationRecords(context, pets, veterinarians);
 
             // Seed appointments
             await SeedSampleAppointments(context, pets, veterinarians);
@@ -187,60 +189,137 @@ public static class DbInitializer
         }
     }
 
-    private static async Task<List<Veterinarian>> SeedSampleVeterinarians(PetPalDbContext context)
+    private static async Task<List<Veterinarian>> SeedSampleVeterinarians(PetPalDbContext context, UserManager<IdentityUser> userManager)
     {
-        var veterinarians = new List<Veterinarian>
+        var veterinarianData = new[]
         {
-            new Veterinarian
-            {
-                FirstName = "John",
-                LastName = "Smith",
-                Email = "john.smith@petpal.com",
-                Phone = "555-111-2222",
-                Specialty = "General",
-                ClinicName = "PetPal Clinic",
-                Address = "123 Main St",
-                LicenseNumber = "VET12345"
-            },
-            new Veterinarian
-            {
-                FirstName = "Sarah",
-                LastName = "Johnson",
-                Email = "sarah.johnson@petpal.com",
-                Phone = "555-333-4444",
-                Specialty = "Surgery",
-                ClinicName = "PetPal Clinic",
-                Address = "123 Main St",
-                LicenseNumber = "VET67890"
-            },
-            new Veterinarian
-            {
-                FirstName = "Michael",
-                LastName = "Chen",
-                Email = "michael.chen@petpal.com",
-                Phone = "555-555-6666",
-                Specialty = "Dermatology",
-                ClinicName = "PetPal Specialty Clinic",
-                Address = "456 Oak Ave",
-                LicenseNumber = "VET24680"
-            },
-            new Veterinarian
-            {
-                FirstName = "Emily",
-                LastName = "Rodriguez",
-                Email = "emily.rodriguez@petpal.com",
-                Phone = "555-777-8888",
-                Specialty = "Cardiology",
-                ClinicName = "PetPal Specialty Clinic",
-                Address = "456 Oak Ave",
-                LicenseNumber = "VET13579"
-            }
+            new { FirstName = "John", LastName = "Smith", Email = "john.smith@petpal.com", Phone = "555-111-2222", Specialty = "General", ClinicName = "PetPal Clinic", Address = "123 Main St", LicenseNumber = "VET12345" },
+            new { FirstName = "Sarah", LastName = "Johnson", Email = "sarah.johnson@petpal.com", Phone = "555-333-4444", Specialty = "Surgery", ClinicName = "PetPal Clinic", Address = "123 Main St", LicenseNumber = "VET67890" },
+            new { FirstName = "Michael", LastName = "Chen", Email = "michael.chen@petpal.com", Phone = "555-555-6666", Specialty = "Dermatology", ClinicName = "PetPal Specialty Clinic", Address = "456 Oak Ave", LicenseNumber = "VET24680" },
+            new { FirstName = "Emily", LastName = "Rodriguez", Email = "emily.rodriguez@petpal.com", Phone = "555-777-8888", Specialty = "Cardiology", ClinicName = "PetPal Specialty Clinic", Address = "456 Oak Ave", LicenseNumber = "VET13579" }
         };
+
+        var veterinarians = new List<Veterinarian>();
+
+        foreach (var vetData in veterinarianData)
+        {
+            // Check if Identity user already exists
+            var identityUser = await userManager.FindByEmailAsync(vetData.Email);
+            if (identityUser == null)
+            {
+                // Create Identity user for veterinarian
+                identityUser = new IdentityUser
+                {
+                    UserName = vetData.Email,
+                    Email = vetData.Email,
+                    EmailConfirmed = true
+                };
+
+                var result = await userManager.CreateAsync(identityUser, "VetPass123!");
+                if (result.Succeeded)
+                {
+                    // Assign Veterinarian role
+                    await userManager.AddToRoleAsync(identityUser, "Veterinarian");
+
+                    // Create UserProfile for veterinarian
+                    var userProfile = new UserProfile
+                    {
+                        FirstName = vetData.FirstName,
+                        LastName = vetData.LastName,
+                        Email = vetData.Email,
+                        Address = new Address
+                        {
+                            Street = vetData.Address,
+                            City = "Veterinary City",
+                            State = "CA",
+                            ZipCode = "90210"
+                        },
+                        Phone = vetData.Phone,
+                        PreferredContactMethod = "Email",
+                        IdentityUserId = identityUser.Id,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    };
+
+                    context.UserProfiles.Add(userProfile);
+                }
+            }
+
+            // Create Veterinarian record
+            var veterinarian = new Veterinarian
+            {
+                FirstName = vetData.FirstName,
+                LastName = vetData.LastName,
+                Email = vetData.Email,
+                Phone = vetData.Phone,
+                Specialty = vetData.Specialty,
+                ClinicName = vetData.ClinicName,
+                Address = vetData.Address,
+                LicenseNumber = vetData.LicenseNumber
+            };
+
+            veterinarians.Add(veterinarian);
+        }
 
         context.Veterinarians.AddRange(veterinarians);
         await context.SaveChangesAsync();
 
         return veterinarians;
+    }
+
+    private static async Task SeedTestVeterinarianUsers(UserManager<IdentityUser> userManager, PetPalDbContext context)
+    {
+        // Create simple test veterinarian accounts
+        var testVets = new[]
+        {
+            new { Email = "vet@petpal.com", FirstName = "Test", LastName = "Veterinarian" },
+            new { Email = "sarah.johnson@petpal.com", FirstName = "Sarah", LastName = "Johnson" },
+            new { Email = "michael.brown@petpal.com", FirstName = "Michael", LastName = "Brown" }
+        };
+
+        foreach (var vetData in testVets)
+        {
+            var existingUser = await userManager.FindByEmailAsync(vetData.Email);
+            if (existingUser == null)
+            {
+                var identityUser = new IdentityUser
+                {
+                    UserName = vetData.Email,
+                    Email = vetData.Email,
+                    EmailConfirmed = true
+                };
+
+                var result = await userManager.CreateAsync(identityUser, "VetPass123!");
+                if (result.Succeeded)
+                {
+                    await userManager.AddToRoleAsync(identityUser, "Veterinarian");
+
+                    // Create user profile
+                    var userProfile = new UserProfile
+                    {
+                        FirstName = vetData.FirstName,
+                        LastName = vetData.LastName,
+                        Email = vetData.Email,
+                        Address = new Address
+                        {
+                            Street = "123 Vet Street",
+                            City = "Vet City",
+                            State = "CA",
+                            ZipCode = "90210"
+                        },
+                        Phone = "555-123-4567",
+                        PreferredContactMethod = "Email",
+                        IdentityUserId = identityUser.Id,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    };
+
+                    context.UserProfiles.Add(userProfile);
+                }
+            }
+        }
+
+        await context.SaveChangesAsync();
     }
 
     private static async Task<List<UserProfile>> SeedSampleUsers(PetPalDbContext context, UserManager<IdentityUser> userManager)
@@ -1308,6 +1387,96 @@ public static class DbInitializer
         }
 
         context.Medications.AddRange(medications);
+        await context.SaveChangesAsync();
+    }
+
+    private static async Task SeedSampleVaccinationRecords(PetPalDbContext context, List<Pet> pets, List<Veterinarian> veterinarians)
+    {
+        if (context.VaccinationRecords.Any() || pets.Count == 0 || veterinarians.Count == 0)
+        {
+            return;
+        }
+
+        var vaccinationRecords = new List<VaccinationRecord>();
+
+        // Sample vaccination records for first pet
+        if (pets.Count >= 1 && veterinarians.Count >= 1)
+        {
+            vaccinationRecords.AddRange(new List<VaccinationRecord>
+            {
+                new VaccinationRecord
+                {
+                    PetId = pets[0].Id,
+                    VaccineName = "Rabies Vaccination",
+                    VaccineType = "Rabies",
+                    AdministrationDate = DateTime.Now.AddMonths(-6),
+                    ExpirationDate = DateTime.Now.AddYears(3),
+                    LotNumber = "RB2024-001",
+                    AdministeredBy = "Dr. Johnson",
+                    Location = "Main Clinic - Room 1",
+                    VeterinarianId = veterinarians[0].Id,
+                    Notes = "Annual rabies vaccination completed successfully. No adverse reactions observed.",
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                },
+                new VaccinationRecord
+                {
+                    PetId = pets[0].Id,
+                    VaccineName = "DHPP (Distemper, Hepatitis, Parvovirus, Parainfluenza)",
+                    VaccineType = "DHPP",
+                    AdministrationDate = DateTime.Now.AddMonths(-6),
+                    ExpirationDate = DateTime.Now.AddYears(1),
+                    LotNumber = "DH2024-005",
+                    AdministeredBy = "Dr. Johnson",
+                    Location = "Main Clinic - Room 1",
+                    VeterinarianId = veterinarians[0].Id,
+                    Notes = "Core vaccine series completed. Booster required in 12 months.",
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                }
+            });
+        }
+
+        // Sample vaccination records for TestPet (for frontend testing)
+        if (pets.Count > 5) // TestPet should be the last pet
+        {
+            var testPetId = pets.Last().Id;
+            vaccinationRecords.AddRange(new List<VaccinationRecord>
+            {
+                new VaccinationRecord
+                {
+                    PetId = testPetId,
+                    VaccineName = "Rabies Vaccination",
+                    VaccineType = "Rabies",
+                    AdministrationDate = DateTime.Now.AddMonths(-12),
+                    ExpirationDate = DateTime.Now.AddMonths(24),
+                    LotNumber = "RB2025-10-344821",
+                    AdministeredBy = "Dr. Sarah Johnson",
+                    Location = "PetPal Veterinary Clinic - Exam Room 2",
+                    VeterinarianId = veterinarians[0].Id,
+                    Notes = "Annual rabies vaccination administered successfully. No adverse reactions observed during 15-minute observation period. Patient tolerated injection well. Next rabies vaccination due October 6, 2028. Vaccination certificate provided to owner.",
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                },
+                new VaccinationRecord
+                {
+                    PetId = testPetId,
+                    VaccineName = "Bordetella (Kennel Cough)",
+                    VaccineType = "Bordetella",
+                    AdministrationDate = DateTime.Now.AddMonths(-6),
+                    ExpirationDate = DateTime.Now.AddMonths(6),
+                    LotNumber = "BK2025-067",
+                    AdministeredBy = "Dr. Mike Wilson",
+                    Location = "Emergency Clinic",
+                    VeterinarianId = veterinarians[1].Id,
+                    Notes = "Intranasal vaccine administered. Annual booster recommended for dogs with high exposure risk.",
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                }
+            });
+        }
+
+        context.VaccinationRecords.AddRange(vaccinationRecords);
         await context.SaveChangesAsync();
     }
 }

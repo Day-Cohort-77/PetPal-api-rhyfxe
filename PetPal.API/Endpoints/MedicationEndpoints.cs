@@ -85,14 +85,15 @@ public static class MedicationEndpoints
         if (userId == null)
             return Results.Unauthorized();
 
-        // Check if user owns the pet or is admin
+        // Check if user owns the pet, is admin, or is veterinarian
         // Fixed: Using IdentityUserId instead of UserId
         var isOwner = await context.PetOwners
             .AnyAsync(po => po.PetId == petId && po.UserProfile.IdentityUserId == userId);
 
         var isAdmin = user.IsInRole("Admin");
+        var isVeterinarian = user.IsInRole("Veterinarian");
 
-        if (!isOwner && !isAdmin)
+        if (!isOwner && !isAdmin && !isVeterinarian)
             return Results.Forbid();
 
         // Verify pet exists
@@ -175,14 +176,15 @@ public static class MedicationEndpoints
         if (medication == null)
             return Results.NotFound();
 
-        // Check if user owns the pet or is admin
+        // Check if user owns the pet, is admin, or is veterinarian
         // Fixed: Using IdentityUserId instead of UserId
         var isOwner = await context.PetOwners
             .AnyAsync(po => po.PetId == medication.PetId && po.UserProfile.IdentityUserId == userId);
 
         var isAdmin = user.IsInRole("Admin");
+        var isVeterinarian = user.IsInRole("Veterinarian");
 
-        if (!isOwner && !isAdmin)
+        if (!isOwner && !isAdmin && !isVeterinarian)
             return Results.Forbid();
 
         var medicationDto = new MedicationDto
@@ -214,14 +216,15 @@ public static class MedicationEndpoints
         if (userId == null)
             return Results.Unauthorized();
 
-        // Check if user owns the pet or is admin
+        // Check if user owns the pet, is admin, or is veterinarian
         // Fixed: Using IdentityUserId instead of UserId
         var isOwner = await context.PetOwners
             .AnyAsync(po => po.PetId == createDto.PetId && po.UserProfile.IdentityUserId == userId);
 
         var isAdmin = user.IsInRole("Admin");
+        var isVeterinarian = user.IsInRole("Veterinarian");
 
-        if (!isOwner && !isAdmin)
+        if (!isOwner && !isAdmin && !isVeterinarian)
             return Results.Forbid();
 
         // Verify pet exists
@@ -289,14 +292,15 @@ public static class MedicationEndpoints
         if (medication == null)
             return Results.NotFound();
 
-        // Check if user owns the pet or is admin
+        // Check if user owns the pet, is admin, or is veterinarian
         // Fixed: Using IdentityUserId instead of UserId
         var isOwner = await context.PetOwners
             .AnyAsync(po => po.PetId == medication.PetId && po.UserProfile.IdentityUserId == userId);
 
         var isAdmin = user.IsInRole("Admin");
+        var isVeterinarian = user.IsInRole("Veterinarian");
 
-        if (!isOwner && !isAdmin)
+        if (!isOwner && !isAdmin && !isVeterinarian)
             return Results.Forbid();
 
         // Update properties
@@ -345,14 +349,15 @@ public static class MedicationEndpoints
         if (medication == null)
             return Results.NotFound();
 
-        // Check if user owns the pet or is admin
+        // Check if user owns the pet, is admin, or is veterinarian
         // Fixed: Using IdentityUserId instead of UserId
         var isOwner = await context.PetOwners
             .AnyAsync(po => po.PetId == medication.PetId && po.UserProfile.IdentityUserId == userId);
 
         var isAdmin = user.IsInRole("Admin");
+        var isVeterinarian = user.IsInRole("Veterinarian");
 
-        if (!isOwner && !isAdmin)
+        if (!isOwner && !isAdmin && !isVeterinarian)
             return Results.Forbid();
 
         context.Medications.Remove(medication);
