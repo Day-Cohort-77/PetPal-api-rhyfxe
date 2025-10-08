@@ -31,10 +31,12 @@ public class TrainingProgressTests : IDisposable
         var pet = new Pet
         {
             Name = "Trainer",
+            Gender = "Male",
             Species = "Dog",
             Breed = "Training Breed",
             DateOfBirth = DateTime.Now.AddYears(-2),
             Weight = 20.0m,
+            WeightUnit = "lbs",
             Color = "Training Color",
             MicrochipNumber = "TRN123456789"
         };
@@ -97,10 +99,12 @@ public class TrainingProgressTests : IDisposable
         var pet = new Pet
         {
             Name = "Status Test",
+            Gender = "Female",
             Species = "Dog",
             Breed = "Test Breed",
             DateOfBirth = DateTime.Now.AddYears(-1),
             Weight = 15.0m,
+            WeightUnit = "lbs",
             Color = "Test Color",
             MicrochipNumber = "STS123456789"
         };
@@ -140,10 +144,12 @@ public class TrainingProgressTests : IDisposable
         var pet = new Pet
         {
             Name = "Proficiency Test",
+            Gender = "Male",
             Species = "Dog",
             Breed = "Test Breed",
             DateOfBirth = DateTime.Now.AddYears(-1),
             Weight = 18.0m,
+            WeightUnit = "lbs",
             Color = "Test Color",
             MicrochipNumber = "PRF123456789"
         };
@@ -180,10 +186,12 @@ public class TrainingProgressTests : IDisposable
         var pet = new Pet
         {
             Name = "Navigation Test",
+            Gender = "Female",
             Species = "Dog",
             Breed = "Navigation Breed",
             DateOfBirth = DateTime.Now.AddYears(-2),
             Weight = 22.0m,
+            WeightUnit = "lbs",
             Color = "Navigation Color",
             MicrochipNumber = "NAV123456789"
         };
@@ -221,10 +229,12 @@ public class TrainingProgressTests : IDisposable
         var pet = new Pet
         {
             Name = "Update Test",
+            Gender = "Male",
             Species = "Dog",
             Breed = "Update Breed",
             DateOfBirth = DateTime.Now.AddYears(-1),
             Weight = 25.0m,
+            WeightUnit = "lbs",
             Color = "Update Color",
             MicrochipNumber = "UPD123456789"
         };
@@ -269,10 +279,12 @@ public class TrainingProgressTests : IDisposable
         var pet = new Pet
         {
             Name = "Optional Test",
+            Gender = "Female",
             Species = "Dog",
             Breed = "Test Breed",
             DateOfBirth = DateTime.Now.AddYears(-1),
-            Weight = 20.0m,
+            Weight = 12.0m,
+            WeightUnit = "lbs",
             Color = "Test Color",
             MicrochipNumber = "OPT123456789"
         };
@@ -322,10 +334,12 @@ public class TrainingProgressTests : IDisposable
         var pet = new Pet
         {
             Name = "Duration Test",
+            Gender = "Male",
             Species = "Dog",
             Breed = "Test Breed",
             DateOfBirth = DateTime.Now.AddYears(-1),
             Weight = 18.0m,
+            WeightUnit = "lbs",
             Color = "Test Color",
             MicrochipNumber = "DUR123456789"
         };
@@ -445,10 +459,12 @@ public class TrainingProgressTests : IDisposable
         var pet = new Pet
         {
             Name = "Mapper Test Dog",
+            Gender = "Male",
             Species = "Dog",
             Breed = "Test Breed",
             DateOfBirth = DateTime.Now.AddYears(-2),
             Weight = 20.0m,
+            WeightUnit = "lbs",
             Color = "Test Color",
             MicrochipNumber = "MAP123456789"
         };
@@ -556,10 +572,12 @@ public class TrainingProgressTests : IDisposable
         var pet = new Pet
         {
             Name = "Max Proficiency Test",
+            Gender = "Female",
             Species = "Dog",
             Breed = "Test Breed",
             DateOfBirth = DateTime.Now.AddYears(-1),
             Weight = 20.0m,
+            WeightUnit = "lbs",
             Color = "Test Color",
             MicrochipNumber = "MAX123456789"
         };
@@ -599,10 +617,12 @@ public class TrainingProgressTests : IDisposable
         var pet = new Pet
         {
             Name = "Long Skill Test",
+            Gender = "Male",
             Species = "Dog",
             Breed = "Test Breed",
             DateOfBirth = DateTime.Now.AddYears(-1),
             Weight = 20.0m,
+            WeightUnit = "lbs",
             Color = "Test Color",
             MicrochipNumber = "LNG123456789"
         };
@@ -648,10 +668,12 @@ public class TrainingProgressTests : IDisposable
         var pet = new Pet
         {
             Name = "Custom Skills Test",
+            Gender = "Female",
             Species = "Dog",
             Breed = "Test Breed",
             DateOfBirth = DateTime.Now.AddYears(-2),
             Weight = 25.0m,
+            WeightUnit = "lbs",
             Color = "Test Color",
             MicrochipNumber = "CST123456789"
         };
@@ -697,10 +719,12 @@ public class TrainingProgressTests : IDisposable
         var pet = new Pet
         {
             Name = "Status Progression Test",
+            Gender = "Male",
             Species = "Dog",
             Breed = "Test Breed",
             DateOfBirth = DateTime.Now.AddYears(-1),
             Weight = 20.0m,
+            WeightUnit = "lbs",
             Color = "Test Color",
             MicrochipNumber = "PRG123456789"
         };
@@ -758,10 +782,12 @@ public class TrainingProgressTests : IDisposable
         var pet = new Pet
         {
             Name = "Chart Data Test",
+            Gender = "Female",
             Species = "Dog",
             Breed = "Analytics Breed",
             DateOfBirth = DateTime.Now.AddYears(-2),
             Weight = 25.0m,
+            WeightUnit = "lbs",
             Color = "Chart Color",
             MicrochipNumber = "CHT123456789"
         };
@@ -866,10 +892,12 @@ public class TrainingProgressTests : IDisposable
         var pet = new Pet
         {
             Name = "Skill Filter Test",
+            Gender = "Male",
             Species = "Dog",
             Breed = "Filter Breed",
             DateOfBirth = DateTime.Now.AddYears(-1),
             Weight = 20.0m,
+            WeightUnit = "lbs",
             Color = "Filter Color",
             MicrochipNumber = "FLT123456789"
         };
@@ -952,10 +980,12 @@ public class TrainingProgressTests : IDisposable
         var pet = new Pet
         {
             Name = "Date Range Test",
+            Gender = "Female",
             Species = "Dog",
             Breed = "Date Breed",
             DateOfBirth = DateTime.Now.AddYears(-1),
             Weight = 18.0m,
+            WeightUnit = "lbs",
             Color = "Date Color",
             MicrochipNumber = "DTE123456789"
         };
@@ -1035,10 +1065,12 @@ public class TrainingProgressTests : IDisposable
         var pet = new Pet
         {
             Name = "Duration Trend Test",
+            Gender = "Male",
             Species = "Dog",
             Breed = "Duration Breed",
             DateOfBirth = DateTime.Now.AddYears(-2),
             Weight = 22.0m,
+            WeightUnit = "lbs",
             Color = "Duration Color",
             MicrochipNumber = "DRT123456789"
         };
@@ -1160,10 +1192,12 @@ public class TrainingProgressTests : IDisposable
         var pet = new Pet
         {
             Name = "Empty Data Test",
+            Gender = "Female",
             Species = "Dog",
             Breed = "Empty Breed",
             DateOfBirth = DateTime.Now.AddYears(-1),
             Weight = 15.0m,
+            WeightUnit = "lbs",
             Color = "Empty Color",
             MicrochipNumber = "EMP123456789"
         };
@@ -1197,10 +1231,12 @@ public class TrainingProgressTests : IDisposable
         var pet = new Pet
         {
             Name = "Multi Status Test",
+            Gender = "Male",
             Species = "Dog",
             Breed = "Status Breed",
             DateOfBirth = DateTime.Now.AddYears(-1),
             Weight = 20.0m,
+            WeightUnit = "lbs",
             Color = "Status Color",
             MicrochipNumber = "MST123456789"
         };
@@ -1254,10 +1290,12 @@ public class TrainingProgressTests : IDisposable
         var pet = new Pet
         {
             Name = "Trainer Share Test",
+            Gender = "Female",
             Species = "Dog",
             Breed = "Share Breed",
             DateOfBirth = DateTime.Now.AddYears(-1),
             Weight = 19.0m,
+            WeightUnit = "lbs",
             Color = "Share Color",
             MicrochipNumber = "SHR123456789"
         };
@@ -1327,10 +1365,12 @@ public class TrainingProgressTests : IDisposable
         var pet = new Pet
         {
             Name = "Calculator",
+            Gender = "Male",
             Species = "Dog",
             Breed = "Math Whiz",
             DateOfBirth = DateTime.Now.AddYears(-2),
             Weight = 20.0m,
+            WeightUnit = "lbs",
             Color = "Brown",
             MicrochipNumber = "CALC123456"
         };
@@ -1391,10 +1431,12 @@ public class TrainingProgressTests : IDisposable
         var pet = new Pet
         {
             Name = "Status Test",
+            Gender = "Female",
             Species = "Dog",
             Breed = "Status Breed",
             DateOfBirth = DateTime.Now.AddYears(-1),
             Weight = 15.0m,
+            WeightUnit = "lbs",
             Color = "Brown",
             MicrochipNumber = "STATUS123456"
         };
@@ -1434,10 +1476,12 @@ public class TrainingProgressTests : IDisposable
         var pet = new Pet
         {
             Name = "Goal Setter",
+            Gender = "Male",
             Species = "Dog",
             Breed = "Achiever",
             DateOfBirth = DateTime.Now.AddYears(-3),
             Weight = 25.0m,
+            WeightUnit = "lbs",
             Color = "Golden",
             MicrochipNumber = "GOAL123456"
         };
@@ -1486,10 +1530,12 @@ public class TrainingProgressTests : IDisposable
         var pet = new Pet
         {
             Name = "Trainee",
+            Gender = "Female",
             Species = "Dog",
             Breed = "Training Breed",
             DateOfBirth = DateTime.Now.AddYears(-1),
             Weight = 20.0m,
+            WeightUnit = "lbs",
             Color = "Black",
             MicrochipNumber = "TRAIN123456"
         };
@@ -1540,10 +1586,12 @@ public class TrainingProgressTests : IDisposable
         var pet = new Pet
         {
             Name = "Proficiency",
+            Gender = "Male",
             Species = "Dog",
             Breed = "Smart Breed",
             DateOfBirth = DateTime.Now.AddYears(-2),
             Weight = 22.0m,
+            WeightUnit = "lbs",
             Color = "Brown",
             MicrochipNumber = "PROF123456"
         };
@@ -1584,10 +1632,12 @@ public class TrainingProgressTests : IDisposable
         var pet = new Pet
         {
             Name = "Timestamp",
+            Gender = "Female",
             Species = "Dog",
             Breed = "Time Breed",
             DateOfBirth = DateTime.Now.AddYears(-1),
             Weight = 18.0m,
+            WeightUnit = "lbs",
             Color = "White",
             MicrochipNumber = "TIME123456"
         };

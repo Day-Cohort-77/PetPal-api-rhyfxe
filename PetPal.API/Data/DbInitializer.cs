@@ -19,7 +19,7 @@ public static class DbInitializer
             var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
 
             // Apply migrations if they are not applied
-            context.Database.Migrate();
+            //context.Database.Migrate();
 
             // Seed roles
             await SeedRoles(roleManager);

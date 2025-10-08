@@ -125,6 +125,9 @@ if (app.Environment.IsDevelopment())
 // Use CORS middleware BEFORE authentication
 app.UseCors("DefaultCorsPolicy");
 
+// Enable serving static files from wwwroot (required for image uploads)
+app.UseStaticFiles();
+
 // Add authentication middleware
 app.UseAuthentication();
 
@@ -137,11 +140,14 @@ app.MapGet("/", () => "PetPal API is running!");
 app.MapAuthEndpoints();
 app.MapPetEndpoints();
 app.MapHealthRecordEndpoints();
+app.MapFileUploadEndpoints();
 app.MapVaccinationRecordEndpoints();
 app.MapTrainingProgressEndpoints();
 app.MapSettingsEndpoints();
 app.MapAppointmentEndpoints();
-app.MapMedicationEndpoints(); 
+app.MapMedicationEndpoints();
 // app.MapVeterinarianEndpoints();
-
 app.Run();
+
+// Make Program accessible for testing
+public partial class Program { }

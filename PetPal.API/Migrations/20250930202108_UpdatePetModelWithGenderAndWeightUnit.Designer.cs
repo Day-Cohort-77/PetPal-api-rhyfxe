@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using PetPal.API.Data;
@@ -11,9 +12,11 @@ using PetPal.API.Data;
 namespace PetPal.API.Migrations
 {
     [DbContext(typeof(PetPalDbContext))]
-    partial class PetPalDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250930202108_UpdatePetModelWithGenderAndWeightUnit")]
+    partial class UpdatePetModelWithGenderAndWeightUnit
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -262,7 +265,7 @@ namespace PetPal.API.Migrations
 
                     b.HasIndex("VeterinarianId");
 
-                    b.ToTable("Appointments", (string)null);
+                    b.ToTable("Appointments");
                 });
 
             modelBuilder.Entity("PetPal.API.Models.HealthRecord", b =>
@@ -310,7 +313,7 @@ namespace PetPal.API.Migrations
 
                     b.HasIndex("VeterinarianId");
 
-                    b.ToTable("HealthRecords", (string)null);
+                    b.ToTable("HealthRecords");
                 });
 
             modelBuilder.Entity("PetPal.API.Models.Medication", b =>
@@ -363,7 +366,7 @@ namespace PetPal.API.Migrations
 
                     b.HasIndex("PetId");
 
-                    b.ToTable("Medications", (string)null);
+                    b.ToTable("Medications");
                 });
 
             modelBuilder.Entity("PetPal.API.Models.Pet", b =>
@@ -402,9 +405,6 @@ namespace PetPal.API.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("Notes")
-                        .HasColumnType("text");
-
                     b.Property<string>("Species")
                         .IsRequired()
                         .HasColumnType("text");
@@ -421,7 +421,7 @@ namespace PetPal.API.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Pets", (string)null);
+                    b.ToTable("Pets");
                 });
 
             modelBuilder.Entity("PetPal.API.Models.PetOwner", b =>
@@ -450,7 +450,7 @@ namespace PetPal.API.Migrations
 
                     b.HasIndex("UserProfileId");
 
-                    b.ToTable("PetOwners", (string)null);
+                    b.ToTable("PetOwners");
                 });
 
             modelBuilder.Entity("PetPal.API.Models.ThemePreferences", b =>
@@ -598,75 +598,7 @@ namespace PetPal.API.Migrations
 
                     b.HasIndex("IdentityUserId");
 
-                    b.ToTable("UserProfiles", (string)null);
-                });
-
-            modelBuilder.Entity("PetPal.API.Models.VaccinationRecord", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("AdministeredBy")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.Property<DateTime>("AdministrationDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Attachments")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime?>("ExpirationDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Location")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.Property<string>("LotNumber")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<string>("Notes")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int>("PetId")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("VaccineName")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.Property<string>("VaccineType")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<int?>("VeterinarianId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("PetId");
-
-                    b.HasIndex("VeterinarianId");
-
-                    b.ToTable("VaccinationRecords");
+                    b.ToTable("UserProfiles");
                 });
 
             modelBuilder.Entity("PetPal.API.Models.Veterinarian", b =>
@@ -717,7 +649,7 @@ namespace PetPal.API.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Veterinarians", (string)null);
+                    b.ToTable("Veterinarians");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -895,7 +827,7 @@ namespace PetPal.API.Migrations
 
                             b1.HasKey("UserProfileId");
 
-                            b1.ToTable("UserProfiles", (string)null);
+                            b1.ToTable("UserProfiles");
 
                             b1.WithOwner()
                                 .HasForeignKey("UserProfileId");
@@ -905,24 +837,6 @@ namespace PetPal.API.Migrations
                         .IsRequired();
 
                     b.Navigation("IdentityUser");
-                });
-
-            modelBuilder.Entity("PetPal.API.Models.VaccinationRecord", b =>
-                {
-                    b.HasOne("PetPal.API.Models.Pet", "Pet")
-                        .WithMany()
-                        .HasForeignKey("PetId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("PetPal.API.Models.Veterinarian", "Veterinarian")
-                        .WithMany()
-                        .HasForeignKey("VeterinarianId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("Pet");
-
-                    b.Navigation("Veterinarian");
                 });
 
             modelBuilder.Entity("PetPal.API.Models.Pet", b =>
