@@ -1020,18 +1020,6 @@ namespace PetPal.API.Migrations
                     b.Navigation("IdentityUser");
                 });
 
-            modelBuilder.Entity("PetPal.API.Models.Medication", b =>
-                {
-                    b.Navigation("AdministrationLogs");
-
-                    b.Navigation("Reminders");
-                });
-
-            modelBuilder.Entity("PetPal.API.Models.MedicationReminder", b =>
-                {
-                    b.Navigation("AdministrationLogs");
-                });
-
             modelBuilder.Entity("PetPal.API.Models.VaccinationRecord", b =>
                 {
                     b.HasOne("PetPal.API.Models.Pet", "Pet")
@@ -1048,6 +1036,18 @@ namespace PetPal.API.Migrations
                     b.Navigation("Pet");
 
                     b.Navigation("Veterinarian");
+                });
+
+            modelBuilder.Entity("PetPal.API.Models.Medication", b =>
+                {
+                    b.Navigation("AdministrationLogs");
+
+                    b.Navigation("Reminders");
+                });
+
+            modelBuilder.Entity("PetPal.API.Models.MedicationReminder", b =>
+                {
+                    b.Navigation("AdministrationLogs");
                 });
 
             modelBuilder.Entity("PetPal.API.Models.Pet", b =>
