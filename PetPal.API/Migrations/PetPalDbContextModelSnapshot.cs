@@ -366,6 +366,85 @@ namespace PetPal.API.Migrations
                     b.ToTable("Medications");
                 });
 
+            modelBuilder.Entity("PetPal.API.Models.MedicationAdministrationLog", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("AdministeredAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("LoggedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("MedicationId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.Property<int>("PetId")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("ReminderId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MedicationId");
+
+                    b.HasIndex("PetId");
+
+                    b.HasIndex("ReminderId");
+
+                    b.ToTable("MedicationAdministrationLogs");
+                });
+
+            modelBuilder.Entity("PetPal.API.Models.MedicationReminder", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsEnabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("MedicationId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("NotificationMethods")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("PetId")
+                        .HasColumnType("integer");
+
+                    b.Property<TimeOnly>("ReminderTime")
+                        .HasColumnType("time without time zone");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MedicationId");
+
+                    b.HasIndex("PetId");
+
+                    b.ToTable("MedicationReminders");
+                });
+
             modelBuilder.Entity("PetPal.API.Models.Pet", b =>
                 {
                     b.Property<int>("Id")
@@ -808,6 +887,51 @@ namespace PetPal.API.Migrations
                     b.Navigation("Pet");
                 });
 
+            modelBuilder.Entity("PetPal.API.Models.MedicationAdministrationLog", b =>
+                {
+                    b.HasOne("PetPal.API.Models.Medication", "Medication")
+                        .WithMany("AdministrationLogs")
+                        .HasForeignKey("MedicationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("PetPal.API.Models.Pet", "Pet")
+                        .WithMany()
+                        .HasForeignKey("PetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("PetPal.API.Models.MedicationReminder", "Reminder")
+                        .WithMany("AdministrationLogs")
+                        .HasForeignKey("ReminderId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Medication");
+
+                    b.Navigation("Pet");
+
+                    b.Navigation("Reminder");
+                });
+
+            modelBuilder.Entity("PetPal.API.Models.MedicationReminder", b =>
+                {
+                    b.HasOne("PetPal.API.Models.Medication", "Medication")
+                        .WithMany("Reminders")
+                        .HasForeignKey("MedicationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("PetPal.API.Models.Pet", "Pet")
+                        .WithMany()
+                        .HasForeignKey("PetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Medication");
+
+                    b.Navigation("Pet");
+                });
+
             modelBuilder.Entity("PetPal.API.Models.PetOwner", b =>
                 {
                     b.HasOne("PetPal.API.Models.Pet", "Pet")
@@ -912,6 +1036,18 @@ namespace PetPal.API.Migrations
                     b.Navigation("Pet");
 
                     b.Navigation("Veterinarian");
+                });
+
+            modelBuilder.Entity("PetPal.API.Models.Medication", b =>
+                {
+                    b.Navigation("AdministrationLogs");
+
+                    b.Navigation("Reminders");
+                });
+
+            modelBuilder.Entity("PetPal.API.Models.MedicationReminder", b =>
+                {
+                    b.Navigation("AdministrationLogs");
                 });
 
             modelBuilder.Entity("PetPal.API.Models.Pet", b =>

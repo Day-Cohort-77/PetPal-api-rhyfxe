@@ -17,6 +17,8 @@ public class PetPalDbContext : IdentityDbContext<IdentityUser>
     public DbSet<VaccinationRecord> VaccinationRecords { get; set; }
     public DbSet<Appointment> Appointments { get; set; }
     public DbSet<Medication> Medications { get; set; }
+    public DbSet<MedicationReminder> MedicationReminders { get; set; }
+    public DbSet<MedicationAdministrationLog> MedicationAdministrationLogs { get; set; }
     public DbSet<Veterinarian> Veterinarians { get; set; }
     public DbSet<TrainingProgress> TrainingProgress { get; set; }
     public DbSet<ThemePreferences> ThemePreferences { get; set; }
@@ -88,6 +90,46 @@ public class PetPalDbContext : IdentityDbContext<IdentityUser>
             .WithMany(p => p.Medications)
             .HasForeignKey(m => m.PetId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // Configure MedicationReminder relationships
+        modelBuilder.Entity<MedicationReminder>()
+            .HasOne(mr => mr.Medication)
+            .WithMany(m => m.Reminders)
+            .HasForeignKey(mr => mr.MedicationId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<MedicationReminder>()
+            .HasOne(mr => mr.Pet)
+            .WithMany()
+            .HasForeignKey(mr => mr.PetId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // Configure NotificationMethods as a JSON column
+        modelBuilder.Entity<MedicationReminder>()
+            .Property(mr => mr.NotificationMethods)
+            .HasConversion(
+                v => string.Join(',', v),
+                v => v.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList()
+            );
+
+        // Configure MedicationAdministrationLog relationships
+        modelBuilder.Entity<MedicationAdministrationLog>()
+            .HasOne(mal => mal.Medication)
+            .WithMany(m => m.AdministrationLogs)
+            .HasForeignKey(mal => mal.MedicationId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<MedicationAdministrationLog>()
+            .HasOne(mal => mal.Pet)
+            .WithMany()
+            .HasForeignKey(mal => mal.PetId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<MedicationAdministrationLog>()
+            .HasOne(mal => mal.Reminder)
+            .WithMany(mr => mr.AdministrationLogs)
+            .HasForeignKey(mal => mal.ReminderId)
+            .OnDelete(DeleteBehavior.SetNull);
 
         // Configure TrainingProgress relationships
         modelBuilder.Entity<TrainingProgress>()

@@ -73,5 +73,24 @@ public class MappingProfiles : Profile
         CreateMap<ThemePreferences, ThemePreferencesDto>()
             .ForMember(dest => dest.UserId, opt => opt.MapFrom(src => src.UserProfile!.IdentityUserId));
         CreateMap<UpdateThemePreferencesDto, ThemePreferences>();
+
+        // Medication Reminder mappings
+        CreateMap<MedicationReminder, MedicationReminderDto>()
+            .ForMember(dest => dest.Time, opt => opt.MapFrom(src => src.ReminderTime.ToString("HH:mm")))
+            .ForMember(dest => dest.Enabled, opt => opt.MapFrom(src => src.IsEnabled));
+
+        // Medication Administration Log mappings
+        CreateMap<MedicationAdministrationLog, MedicationAdministrationLogDto>()
+            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString().ToLower()));
+        CreateMap<LogMedicationAdministrationDto, MedicationAdministrationLog>()
+            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => 
+                Enum.Parse<MedicationAdministrationStatus>(src.Status, true)));
+
+        // Medication History mappings
+        CreateMap<Medication, MedicationHistoryDto>()
+            .ForMember(dest => dest.MedicationId, opt => opt.MapFrom(src => src.Id))
+            .ForMember(dest => dest.MedicationName, opt => opt.MapFrom(src => src.Name))
+            .ForMember(dest => dest.PetName, opt => opt.MapFrom(src => src.Pet.Name))
+            .ForMember(dest => dest.AdministrationHistory, opt => opt.MapFrom(src => src.AdministrationLogs));
     }
 }
